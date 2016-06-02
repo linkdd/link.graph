@@ -1,0 +1,98 @@
+(* keywords definition *)
+
+@@keyword :: TRUE FALSE
+@@keyword :: AS
+@@keyword :: ELTS
+@@keyword :: GRAPHS
+@@keyword :: DEPTH WIDE
+@@keyword :: FROM
+@@keyword :: WHERE AND
+@@keyword :: INSERT
+@@keyword :: SELECT
+@@keyword :: SET UNSET ADDTOSET DELFROMSET
+@@keyword :: UPDATE
+@@keyword :: DELETE
+
+(* symbols definition *)
+
+digit = /[0-9]/ ;
+symbol = /[a-zA-Z]/ ;
+characters = /\w*/ ;
+
+(* basic type definition *)
+
+@name
+identifier = /[_a-zA-Z][a-zA-Z0-9_]*/ ;
+string = '"' characters '"' | "'" characters "'" ;
+natural = { digit }+ ;
+sign = "+" | "-" ;
+integer = [ sign ] natural ;
+decimal = [ sign ] natural "." natural ;
+boolean = "TRUE" | "FALSE" ;
+
+(* complex type definition *)
+
+value = string:string | integer:integer | decimal:decimal | boolean:boolean ;
+property_name = identifier ;
+alias = identifier ;
+aliased_property = alias:alias "." propname:property_name ;
+aliases = ",".{ alias:alias } ;
+cond_operator = ">" | "<" | ">=" | "<=" | "=" | "!=" | "~=" ;
+
+expression = value | aliased_property ;
+
+type = identifier ;
+types = ",".{ type } ;
+property_cond = propname:property_name op:cond_operator expr:expression ;
+properties_cond = ",".{ property_cond } ;
+
+(* walkthrough elements definition *)
+
+elements = "(" types:types ")" [ "{" props:properties_cond "}" ] ;
+aliased_elements = elts:elements [ "AS" alias:alias ] ;
+
+graph_joint = "ELTS" ;
+elt_joint = "GRAPHS" ;
+
+backward = "<" | "-" ;
+forward = "-" | ">" ;
+cardinality = [ natural ] [ ".." ] [ natural ] ;
+walk_mode = "DEPTH" | "WIDE" ;
+base_joint = bw:backward aliased_elements fw:forward [ card:cardinality ] [ wmode:walk_mode ] ;
+
+node_joint = base_joint ;
+relationship_joint = base_joint ;
+
+joint = gjoint:graph_joint | ejoint:elt_joint | njoint:node_joint | rjoint:relationship_joint ;
+
+path = aliased_elements { joint [ aliased_elements ] } ;
+walkthrough_stmt = "FROM" path:path ;
+walkthrough_stmts = { walkstmt+:walkthrough_stmt }+ ;
+
+(* filter elements definition *)
+
+condition = prop:aliased_property op:cond_operator expr:expression ;
+filter_stmt = "WHERE" "AND".{ filter+:condition } ;
+
+(* CRUD elements definition *)
+
+new_property = propname:property_name "=" expr:expression ;
+new_properties = ",".{ new_property } ;
+new_cardinality = natural ;
+new_data = "(" type:type props+:new_properties ")" [ "AS" alias:alias ] [ card:new_cardinality ] ;
+create_stmt = "INSERT" ",".{ data+:new_data } ;
+
+read_stmt = "SELECT" aliases+:aliases ;
+
+update_keyword = "SET" | "UNSET" | "ADDTOSET" | "DELFROMSET" ;
+update_alias = alias:alias op:update_keyword expr:expression ;
+update_data = ",".{ update_alias } ;
+update_stmt = "UPDATE" data+:update_data ;
+
+delete_stmt = "DELETE" aliases+:aliases ;
+
+crud_stmt = create:create_stmt | read:read_stmt | update:update_stmt | delete:delete_stmt ;
+
+(* Request final definition *)
+
+request = walkthrough_stmts filter_stmt crud_stmt ;
