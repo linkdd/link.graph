@@ -96,3 +96,5 @@ crud_stmt = create:create_stmt | read:read_stmt | update:update_stmt | delete:de
 (* Request final definition *)
 
 request = walkthrough_stmts filter_stmt crud_stmt ;
+
+start = request ;
