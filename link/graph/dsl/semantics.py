@@ -15,7 +15,7 @@ class GraphDSLSemantics(object):
         return ast
 
     def string(self, ast):
-        return ast
+        return ast[1]
 
     def natural(self, ast):
         return ast

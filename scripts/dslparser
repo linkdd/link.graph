@@ -17,7 +17,7 @@ if __name__ == '__main__':
     args = aparser.parse_args()
 
     module = single_parser_per_scope()
-    parser = module.GraphDSLParser()
+    parser = module.GraphDSLParser(semantics=module.GraphDSLSemantics())
 
     for fname in args.file:
         print('-' * 80)

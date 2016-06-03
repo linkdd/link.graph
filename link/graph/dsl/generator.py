@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from b3j0f.conf import Configurable, category, Parameter
+from b3j0f.conf.driver.file.base import FileConfDriver
+
 from b3j0f.utils.runtime import singleton_per_scope
 from b3j0f.utils.path import lookup
 
@@ -12,13 +14,17 @@ from grako.codegen import pythoncg
 from six import exec_, string_types
 import imp
 import sys
+import os
 
 
 @Configurable(
     paths='{0}/dsl/generator.conf'.format(CONF_BASE_PATH),
     conf=category(
         'DSLGEN',
-        Parameter(name='grammar', value='graph/dsl/grammar.bnf'),
+        Parameter(
+            name='grammar',
+            value='{0}/dsl/grammar.bnf'.format(CONF_BASE_PATH)
+        ),
         Parameter(
             name='semantics',
             value='link.graph.dsl.semantics.GraphDSLSemantics'
@@ -29,6 +35,26 @@ import sys
 class GraphDSLGenerator(object):
 
     MODEL_PREFIX = 'GraphDSL'
+
+    class Error(Exception):
+        pass
+
+    @property
+    def grammar(self):
+        if not hasattr(self, '_grammar'):
+            self.grammar = None
+
+        return self._grammar
+
+    @grammar.setter
+    def grammar(self, value):
+        if value is not None and not os.path.isabs(value):
+            fconfdrv = FileConfDriver()
+            paths = fconfdrv.rscpaths(value)
+
+            value = paths[0] if paths else None
+
+        self._grammar = value
 
     @property
     def semantics(self):
@@ -45,6 +71,11 @@ class GraphDSLGenerator(object):
         self._semantics = value
 
     def load_grammar(self):
+        if self.grammar is None:
+            raise GraphDSLGenerator.Error(
+                'Grammar is unspecified or not found'
+            )
+
         with open(self.grammar) as f:
             grammar = f.read()
 
@@ -53,8 +84,7 @@ class GraphDSLGenerator(object):
     def parse_model(self, grammar):
         parser = GrakoGrammarGenerator(
             GraphDSLGenerator.MODEL_PREFIX,
-            filename=self.grammar,
-            semantics=self.semantics()
+            filename=self.grammar
         )
 
         return parser.parse(grammar)
@@ -64,6 +94,8 @@ class GraphDSLGenerator(object):
 
         module = imp.new_module(self.modname)
         exec_(code, module.__dict__)
+
+        module.__dict__[self.semantics.__name__] = self.semantics
 
         sys.modules[self.modname] = module
 
