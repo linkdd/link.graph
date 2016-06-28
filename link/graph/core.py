@@ -4,7 +4,10 @@ from b3j0f.conf import Configurable, category, Parameter
 from link.middleware.core import Middleware
 
 from link.graph.dsl.generator import single_parser_per_scope
+from link.graph.dsl.walker import GraphDSLNodeWalker
 from link.graph import CONF_BASE_PATH
+
+from grako.model import ModelBuilderSemantics
 
 
 @Configurable(
@@ -37,7 +40,9 @@ class GraphManager(object):
     def __init__(self, *args, **kwargs):
         super(GraphManager, self).__init__(*args, **kwargs)
 
-        self.parser = single_parser_per_scope()
+        module = single_parser_per_scope()
+        self.parser = module.GraphDSLParser(semantics=ModelBuilderSemantics())
+        self.walker = GraphDSLNodeWalker(self)
 
     def call_algorithm(self, dataset, algocls):
         algo = algocls(self)
@@ -45,4 +50,4 @@ class GraphManager(object):
 
     def __call__(self, request):
         model = self.parser.parse(request, rule_name='start')
-        print(model)
+        self.walker.walk(model)

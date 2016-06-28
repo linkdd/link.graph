@@ -80,21 +80,21 @@ new_property = propname:property_name "=" expr:expression ;
 new_properties = ",".{ new_property } ;
 new_cardinality = natural ;
 new_data = "(" type:type props+:new_properties ")" [ "AS" alias:alias ] [ card:new_cardinality ] ;
-create_stmt = "INSERT" ",".{ data+:new_data } ;
+create_stmt::CreateStatementNode = "INSERT" ",".{ data+:new_data } ;
 
-read_stmt = "SELECT" aliases+:aliases ;
+read_stmt::ReadStatementNode = "SELECT" aliases+:aliases ;
 
 update_keyword = "SET" | "UNSET" | "ADDTOSET" | "DELFROMSET" ;
 update_alias = alias:alias op:update_keyword expr:expression ;
 update_data = ",".{ update_alias } ;
-update_stmt = "UPDATE" data+:update_data ;
+update_stmt::UpdateStatementNode = "UPDATE" data+:update_data ;
 
-delete_stmt = "DELETE" aliases+:aliases ;
+delete_stmt::DeleteStatementNode = "DELETE" aliases+:aliases ;
 
-crud_stmt = create:create_stmt | read:read_stmt | update:update_stmt | delete:delete_stmt ;
+crud_stmt::CRUDStatementNode = create:create_stmt | read:read_stmt | update:update_stmt | delete:delete_stmt ;
 
 (* Request final definition *)
 
-request = walkthrough_stmts filter_stmt crud_stmt ;
+request::RequestNode = walkthrough_stmts filter_stmt crud_stmt ;
 
 start = request ;
