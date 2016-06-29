@@ -1,162 +1,45 @@
 # -*- coding: utf-8 -*-
 
+from b3j0f.utils.iterable import isiterable
+from six import string_types
+
 
 class GraphDSLSemantics(object):
-    def digit(self, ast):
-        return ast
+    def parse_StringNode(self, node):
+        return node.value
 
-    def symbol(self, ast):
-        return ast
+    def parse_IntegerNode(self, node):
+        return int(''.join(node.value))
 
-    def characters(self, ast):
-        return ast
+    def parse_DecimalNode(self, node):
+        return float(''.join(node.value))
 
-    def identifier(self, ast):
-        return ast
+    def parse_BooleanNode(self, node):
+        return (node.value == 'TRUE')
 
-    def string(self, ast):
-        return ast[1]
+    def parse_ValueNode(self, node):
+        return node.value.value
 
-    def natural(self, ast):
-        return ast
+    def parse_PathNode(self, node):
+        aelts = node.aelts
+        joints = node.joint
 
-    def sign(self, ast):
-        return ast
+        if not isiterable(aelts, exclude=string_types):
+            aelts = [aelts]
 
-    def integer(self, ast):
-        return int(''.join(ast))
+        if not isiterable(joints, exclude=string_types):
+            joints = [joints]
 
-    def decimal(self, ast):
-        return ast
+        nodes = []
 
-    def boolean(self, ast):
-        return ast
+        for i in range(len(aelts) + len(joints)):
+            if i % 2 == 0:
+                local_node = aelts[i // 2]
 
-    def value(self, ast):
-        return ast
+            else:
+                local_node = joints[i // 2]
 
-    def property_name(self, ast):
-        return ast
+            if local_node is not None:
+                nodes.append(local_node)
 
-    def alias(self, ast):
-        return ast
-
-    def aliased_property(self, ast):
-        return ast
-
-    def aliases(self, ast):
-        return ast
-
-    def cond_operator(self, ast):
-        return ast
-
-    def expression(self, ast):
-        return ast
-
-    def type(self, ast):
-        return ast
-
-    def types(self, ast):
-        return ast
-
-    def property_cond(self, ast):
-        return ast
-
-    def properties_cond(self, ast):
-        return ast
-
-    def elements(self, ast):
-        return ast
-
-    def aliased_elements(self, ast):
-        return ast
-
-    def graph_joint(self, ast):
-        return ast
-
-    def elt_joint(self, ast):
-        return ast
-
-    def backward(self, ast):
-        return ast
-
-    def forward(self, ast):
-        return ast
-
-    def cardinality(self, ast):
-        c1, c2, c3 = ast
-
-        return [
-            int(''.join(c1)),
-            c2,
-            int(''.join(c3))
-        ]
-
-    def walk_mode(self, ast):
-        return ast
-
-    def base_joint(self, ast):
-        return ast
-
-    def node_joint(self, ast):
-        return ast
-
-    def relationship_joint(self, ast):
-        return ast
-
-    def joint(self, ast):
-        return ast
-
-    def path(self, ast):
-        return ast
-
-    def walkthrough_stmt(self, ast):
-        return ast
-
-    def walkthrough_stmts(self, ast):
-        return ast
-
-    def condition(self, ast):
-        return ast
-
-    def filter_stmt(self, ast):
-        return ast
-
-    def new_property(self, ast):
-        return ast
-
-    def new_properties(self, ast):
-        return ast
-
-    def new_cardinality(self, ast):
-        return int(''.join(ast))
-
-    def new_data(self, ast):
-        return ast
-
-    def create_stmt(self, ast):
-        return ast
-
-    def read_stmt(self, ast):
-        return ast
-
-    def update_keyword(self, ast):
-        return ast
-
-    def update_alias(self, ast):
-        return ast
-
-    def update_data(self, ast):
-        return ast
-
-    def update_stmt(self, ast):
-        return ast
-
-    def delete_stmt(self, ast):
-        return ast
-
-    def crud_stmt(self, ast):
-        return ast
-
-    def request(self, ast):
-        return ast
+        return nodes

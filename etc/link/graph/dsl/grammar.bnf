@@ -22,34 +22,34 @@ characters = /\w*/ ;
 (* basic type definition *)
 
 @name
-identifier = /[_a-zA-Z][a-zA-Z0-9_]*/ ;
-string = '"' characters '"' | "'" characters "'" ;
+identifier::IdentifierNode = name:(/[_a-zA-Z][a-zA-Z0-9_]*/) ;
+string::StringNode = '"' value:characters '"' | "'" value:characters "'" ;
 natural = { digit }+ ;
 sign = "+" | "-" ;
-integer = [ sign ] natural ;
-decimal = [ sign ] natural "." natural ;
-boolean = "TRUE" | "FALSE" ;
+integer::IntegerNode = value:([ sign ] natural) ;
+decimal::DecimalNode = value:([ sign ] natural "." natural) ;
+boolean::BooleanNode = value:("TRUE" | "FALSE") ;
 
 (* complex type definition *)
 
-value = string:string | integer:integer | decimal:decimal | boolean:boolean ;
+value::ValueNode = value:string | value:integer | value:decimal | value:boolean ;
 property_name = identifier ;
 alias = identifier ;
-aliased_property = alias:alias "." propname:property_name ;
+aliased_property::AliasedProperty = alias:alias "." propname:property_name ;
 aliases = ",".{ alias:alias } ;
 cond_operator = ">" | "<" | ">=" | "<=" | "=" | "!=" | "~=" ;
 
-expression = value | aliased_property ;
+expression::ExpressionNode = value:value | aprop:aliased_property ;
 
 type = identifier ;
 types = ",".{ type } ;
-property_cond = propname:property_name op:cond_operator expr:expression ;
-properties_cond = ",".{ property_cond } ;
+property_cond::PropertyConditionNode = propname:property_name op:cond_operator expr:expression ;
+properties_cond::PropertyConditionsBlockNode = ",".{ conditions:property_cond } ;
 
 (* walkthrough elements definition *)
 
-elements = "(" types:types ")" [ "{" props:properties_cond "}" ] ;
-aliased_elements = elts:elements [ "AS" alias:alias ] ;
+elements::ElementsNode = "(" types:types ")" [ "{" props:properties_cond "}" ] ;
+aliased_elements::AliasedElementsNode = elts:elements [ "AS" alias:alias ] ;
 
 graph_joint = "ELTS" ;
 elt_joint = "GRAPHS" ;
@@ -63,11 +63,11 @@ base_joint = bw:backward aliased_elements fw:forward [ card:cardinality ] [ wmod
 node_joint = base_joint ;
 relationship_joint = base_joint ;
 
-joint = gjoint:graph_joint | ejoint:elt_joint | njoint:node_joint | rjoint:relationship_joint ;
+joint::JointNode = gjoint:graph_joint | ejoint:elt_joint | njoint:node_joint | rjoint:relationship_joint ;
 
-path = aliased_elements { joint [ aliased_elements ] } ;
-walkthrough_stmt = "FROM" path:path ;
-walkthrough_stmts = { walkstmt+:walkthrough_stmt }+ ;
+path::PathNode = aelts:aliased_elements { joint:joint [ aelts:aliased_elements ] } ;
+walkthrough_stmt::WalkthroughStatementNode = "FROM" path:path ;
+walkthrough_stmts::WalkthroughBlockNode = { walkstmt+:walkthrough_stmt }+ ;
 
 (* filter elements definition *)
 
@@ -95,6 +95,6 @@ crud_stmt::CRUDStatementNode = create:create_stmt | read:read_stmt | update:upda
 
 (* Request final definition *)
 
-request::RequestNode = walkthrough_stmts filter_stmt crud_stmt ;
+request::RequestNode = walkthrough:walkthrough_stmts filter:filter_stmt crud:crud_stmt ;
 
 start = request ;
