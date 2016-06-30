@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from b3j0f.conf import Configurable, category, Parameter
-from link.middleware.core import Middleware
 
 from link.graph.dsl.generator import single_parser_per_scope
 from link.graph.dsl.walker import GraphDSLNodeWalker
+
+from link.middleware.core import Middleware
 from link.graph import CONF_BASE_PATH
 
 from grako.model import ModelBuilderSemantics
@@ -50,4 +51,4 @@ class GraphManager(object):
 
     def __call__(self, request):
         model = self.parser.parse(request, rule_name='start')
-        self.walker.walk(model)
+        return self.walker.walk(model)

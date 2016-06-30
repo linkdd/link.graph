@@ -1,8 +1,8 @@
 FROM
-    ( mynode1, mynode2 ) { myprop = "val0", foo != "bar" } AS elt0
-    < ( myrel1, myrel2, myrel3 ) { weight > 2 } AS elt1 - 5..10 DEPTH
+    NODES(mynode1, mynode2) { myprop = "val0", foo != "bar" } AS elt0
+    < RELS( myrel1, myrel2, myrel3 ) { weight > 2 } AS elt1 - 5..10 DEPTH
 FROM
-    ( myrel2 , myrel3 ) { weight > 5 } AS elt3
+    RELS( myrel2 , myrel3 ) { weight > 5 } AS elt3
 WHERE
     elt1.myprop != "val0"
 AND

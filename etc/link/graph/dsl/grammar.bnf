@@ -3,6 +3,8 @@
 @@keyword :: TRUE FALSE
 @@keyword :: AS
 @@keyword :: ELTS
+@@keyword :: NODES
+@@keyword :: RELS
 @@keyword :: GRAPHS
 @@keyword :: DEPTH WIDE
 @@keyword :: FROM
@@ -24,10 +26,10 @@ characters = /\w*/ ;
 @name
 identifier::IdentifierNode = name:(/[_a-zA-Z][a-zA-Z0-9_]*/) ;
 string::StringNode = '"' value:characters '"' | "'" value:characters "'" ;
-natural = { digit }+ ;
+natural::NaturalNode = value:({ digit }+) ;
 sign = "+" | "-" ;
-integer::IntegerNode = value:([ sign ] natural) ;
-decimal::DecimalNode = value:([ sign ] natural "." natural) ;
+integer::IntegerNode = value:([ sign:sign ] int:natural) ;
+decimal::DecimalNode = value:([ sign:sign ] int:natural "." dec:natural) ;
 boolean::BooleanNode = value:("TRUE" | "FALSE") ;
 
 (* complex type definition *)
@@ -48,7 +50,8 @@ properties_cond::PropertyConditionsBlockNode = conditions:(",".{ property_cond }
 
 (* walkthrough elements definition *)
 
-elements::ElementsNode = "(" types:types ")" [ "{" props:properties_cond "}" ] ;
+elt_type = "NODES" | "RELS" ;
+elements::ElementsNode = elt_type:elt_type "(" types:types ")" [ "{" props:properties_cond "}" ] ;
 aliased_elements::AliasedElementsNode = elts:elements [ "AS" alias:alias ] ;
 
 graph_joint = "ELTS" ;
@@ -56,7 +59,7 @@ elt_joint = "GRAPHS" ;
 
 backward = "<" | "-" ;
 forward = "-" | ">" ;
-cardinality = [ natural ] [ ".." ] [ natural ] ;
+cardinality::CardinalityNode = [ begin:natural ] [ ".." ] [ end:natural ] ;
 walk_mode = "DEPTH" | "WIDE" ;
 base_joint = bw:backward aelts:aliased_elements fw:forward [ card:cardinality ] [ wmode:walk_mode ] ;
 

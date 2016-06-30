@@ -8,11 +8,26 @@ class GraphDSLSemantics(object):
     def parse_StringNode(self, node):
         return node.value
 
-    def parse_IntegerNode(self, node):
+    def parse_NaturalNode(self, node):
         return int(''.join(node.value))
 
+    def parse_IntegerNode(self, node):
+        if node.sign is not None:
+            return int('{0}{1}'.format(node.sign, node.int.value))
+
+        else:
+            return node.int.value
+
     def parse_DecimalNode(self, node):
-        return float(''.join(node.value))
+        if node.sign is not None:
+            return float('{0}{1}.{2}'.format(
+                node.sign,
+                node.int.value,
+                node.dec.value
+            ))
+
+        else:
+            return float('{0}.{1}'.format(node.int.value, node.dec.value))
 
     def parse_BooleanNode(self, node):
         return (node.value == 'TRUE')
