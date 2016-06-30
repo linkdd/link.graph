@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from link.graph.dsl.semantics import GraphDSLSemantics
-from link.graph.algorithms import NodeFilter, RelFilter, Joint
+from link.graph.algorithms import Filter, Joint
 
 from grako.model import DepthFirstWalker
 
@@ -11,8 +11,6 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         super(GraphDSLNodeWalker, self).__init__(*args, **kwargs)
 
         self.graphmgr = graphmgr
-        self.context = None
-        self.aliases = {}
         self.semantics = GraphDSLSemantics()
 
     def walk_StringNode(self, node, child_retval):
@@ -45,7 +43,6 @@ class GraphDSLNodeWalker(DepthFirstWalker):
 
         if node.alias is not None:
             node.alias = node.alias.name
-            self.aliases[node.alias] = node
 
     def walk_CardinalityNode(self, node, child_retval):
         node.begin = node.begin.value
@@ -60,37 +57,45 @@ class GraphDSLNodeWalker(DepthFirstWalker):
     def walk_WalkthroughBlockNode(self, node, child_retval):
         walk_sequence = [
             (
-                node.walkstmt[0].elt_type,
-                node.walkstmt[0].query
+                node.walkstmt[0].path[0].elt_type,
+                node.walkstmt[0].path[0].query
             )
         ]
 
-        for walknode in node.walkstmt[1:]:
-            if walknode.__class__.__name__ == 'AliasedElementsNode':
-                if walknode.elt_type == 'NODES':
-                    walk_sequence.append(
-                        NodeFilter(self.graphmgr, walknode.query)
-                    )
+        for walknode in node.walkstmt:
+            path = walknode.path
 
-                elif walknode.elt_type == 'RELS':
-                    walk_sequence.append(
-                        RelFilter(self.graphmgr, walknode.query)
-                    )
+            if walknode is node.walkstmt[0]:
+                path = path[1:]
 
-            elif walknode.__class__.__name__ == 'JointNode':
-                algo = Joint(
-                    self.graphmgr,
-                    elements=walknode.ejoint,
-                    nodes=walknode.njoint,
-                    relationships=walknode.rjoint,
-                    graphs=walknode.gjoint
-                )
-                walk_sequence.append(algo)
+            for step in path:
+                if step.__class__.__name__ == 'AliasedElementsNode':
+                    if step.elt_type == 'NODES':
+                        walk_sequence.append(
+                            Filter(self.graphmgr, step.query)
+                        )
+
+                    elif step.elt_type == 'RELS':
+                        walk_sequence.append(
+                            Filter(self.graphmgr, step.query)
+                        )
+
+                elif step.__class__.__name__ == 'JointNode':
+                    algo = Joint(
+                        self.graphmgr,
+                        elements=step.ejoint,
+                        nodes=step.njoint,
+                        relationships=step.rjoint,
+                        graphs=step.gjoint
+                    )
+                    walk_sequence.append(algo)
 
         node.sequence = walk_sequence
         del node.walkstmt
 
     def walk_RequestNode(self, node, child_retval):
+        context = None
+
         # walk through graph
         initial = node.walkthrough.sequence[0]
 
@@ -100,12 +105,12 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         elif initial[0] == 'RELS':
             f = self.graphmgr.relationships_store.get_feature('fulltext')
 
-        self.context = f(initial[1])
+        context = f(initial[1])
 
         for step in node.walkthrough.sequence[1:]:
-            self.context = self.graphmgr.call_algorithm(self.context, step)
+            context = self.graphmgr.call_algorithm(context, step)
 
         # TODO: filter elements
         # TODO: apply CRUD operations
 
-        return self.context
+        return context
