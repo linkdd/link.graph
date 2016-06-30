@@ -44,7 +44,7 @@ expression::ExpressionNode = value:value | aprop:aliased_property ;
 type = identifier ;
 types = ",".{ type } ;
 property_cond::PropertyConditionNode = propname:property_name op:cond_operator expr:expression ;
-properties_cond::PropertyConditionsBlockNode = ",".{ conditions:property_cond } ;
+properties_cond::PropertyConditionsBlockNode = conditions:(",".{ property_cond }) ;
 
 (* walkthrough elements definition *)
 
@@ -58,7 +58,7 @@ backward = "<" | "-" ;
 forward = "-" | ">" ;
 cardinality = [ natural ] [ ".." ] [ natural ] ;
 walk_mode = "DEPTH" | "WIDE" ;
-base_joint = bw:backward aliased_elements fw:forward [ card:cardinality ] [ wmode:walk_mode ] ;
+base_joint = bw:backward aelts:aliased_elements fw:forward [ card:cardinality ] [ wmode:walk_mode ] ;
 
 node_joint = base_joint ;
 relationship_joint = base_joint ;

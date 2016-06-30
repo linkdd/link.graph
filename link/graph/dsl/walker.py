@@ -28,6 +28,14 @@ class GraphDSLNodeWalker(DepthFirstWalker):
     def walk_ValueNode(self, node, *args):
         node.value = self.semantics.parse_ValueNode(node)
 
+    def walk_AliasedElementsNode(self, node, *args):
+        node.query = self.semantics.parse_query(node)
+        del node.elts
+
+        if node.alias is not None:
+            node.alias = node.alias.name
+            self.aliases[node.alias] = node
+
     def walk_WalkthroughBlockNode(self, node, *args):
         for walkstmt in node.walkstmt:
             print('---')
@@ -35,18 +43,13 @@ class GraphDSLNodeWalker(DepthFirstWalker):
 
             for node in nodes:
                 if node.__class__.__name__ == 'AliasedElementsNode':
-                    if node.alias is not None:
-                        self.aliases[node.alias.name] = node.elts
-
-                    types = [
-                        t.name
-                        for t in node.elts.types
-                    ]
-
-                    type_query = 'type_set:({0})'.format(' OR '.join(types))
-
-                    print('TYPES:', type_query)
-                    print('PROPS:', node.elts.props)
+                    print('QUERY:', node.query)
+                    print('ALIAS:', node.alias)
 
                 else:
                     print('JOINT:', node)
+
+    def walk_RequestNode(self, node, *args):
+        print('----')
+        for alias in self.aliases:
+            print('ALIAS <{0}>: {1}'.format(alias, self.aliases[alias]))

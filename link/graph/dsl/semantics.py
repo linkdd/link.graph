@@ -43,3 +43,61 @@ class GraphDSLSemantics(object):
                 nodes.append(local_node)
 
         return nodes
+
+    def parse_query_types(self, node):
+        types = [
+            t.name
+            for t in node.elts.types
+        ]
+
+        return 'type_set:({0})'.format(' OR '.join(types))
+
+    def parse_query_conditions(self, node):
+        prop_queries = []
+
+        for condition in node.elts.props.conditions:
+            if condition.op == '>':
+                prop_query = '{0}:[{1} TO *]'.format(
+                    condition.propname.name,
+                    condition.expr.value.value
+                )
+
+            elif condition.op == '>=':
+                prop_query = '{0}:[{1} TO *]'.format(
+                    condition.propname.name,
+                    condition.expr.value.value - 1
+                )
+
+            elif condition.op == '<':
+                prop_query = '{0}:[* TO {1}]'.format(
+                    condition.propname.name,
+                    condition.expr.value.value - 1
+                )
+
+            elif condition.op == '>=':
+                prop_query = '{0}:[* TO {1}]'.format(
+                    condition.propname.name,
+                    condition.expr.value.value
+                )
+
+            elif condition.op in ['=', '~=']:
+                prop_query = '{0}:{1}'.format(
+                    condition.propname.name,
+                    condition.expr.value.value
+                )
+
+            elif condition.op == '!=':
+                prop_query = '-{0}:{1}'.format(
+                    condition.propname.name,
+                    condition.expr.value.value
+                )
+
+            prop_queries.append(prop_query)
+
+        return ' '.join(prop_queries)
+
+    def parse_query(self, node):
+        return '{0} {1}'.format(
+            self.parse_query_types(node),
+            self.parse_query_conditions(node)
+        )
