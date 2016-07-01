@@ -5,14 +5,9 @@ from b3j0f.conf.driver.file.base import FileConfDriver
 
 from b3j0f.utils.runtime import singleton_per_scope
 
+from link.utils.grammar import codegenerator
 from link.graph import CONF_BASE_PATH
 
-from grako.parser import GrakoGrammarGenerator
-from grako.codegen import pythoncg
-
-from six import exec_
-import imp
-import sys
 import os
 
 
@@ -62,27 +57,14 @@ class GraphDSLGenerator(object):
 
         return grammar
 
-    def parse_model(self, grammar):
-        parser = GrakoGrammarGenerator(
-            GraphDSLGenerator.MODEL_PREFIX,
-            filename=self.grammar
-        )
-
-        return parser.parse(grammar)
-
-    def generate_code(self, model):
-        code = pythoncg(model)
-
-        module = imp.new_module(self.modname)
-        exec_(code, module.__dict__)
-        sys.modules[self.modname] = module
-
-        return module
-
     def __call__(self):
         grammar = self.load_grammar()
-        model = self.parse_model(grammar)
-        return self.generate_code(model)
+
+        return codegenerator(
+            self.modname,
+            GraphDSLGenerator.MODEL_PREFIX,
+            grammar
+        )
 
 
 def single_parser_per_scope(_scope=None, _renew=False):

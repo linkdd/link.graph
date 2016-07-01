@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from link.graph.algorithms.base import Algorithm
-from link.utils.fulltext import FulltextMatch
+from link.fulltext.filter import FulltextMatch
 
 
 class Filter(Algorithm):
