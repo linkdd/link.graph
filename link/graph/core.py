@@ -45,8 +45,7 @@ class GraphManager(object):
         self.parser = module.GraphDSLParser(semantics=ModelBuilderSemantics())
         self.walker = GraphDSLNodeWalker(self)
 
-    def call_algorithm(self, dataset, algocls):
-        algo = algocls(self)
+    def call_algorithm(self, dataset, algo):
         return self.parallel_backend(algo.map, algo.reduce, dataset)
 
     def __call__(self, request):

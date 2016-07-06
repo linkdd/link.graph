@@ -70,15 +70,9 @@ class GraphDSLNodeWalker(DepthFirstWalker):
 
             for step in path:
                 if step.__class__.__name__ == 'AliasedElementsNode':
-                    if step.elt_type == 'NODES':
-                        walk_sequence.append(
-                            Filter(self.graphmgr, step.query)
-                        )
-
-                    elif step.elt_type == 'RELS':
-                        walk_sequence.append(
-                            Filter(self.graphmgr, step.query)
-                        )
+                    walk_sequence.append(
+                        Filter(self.graphmgr, step.query)
+                    )
 
                 elif step.__class__.__name__ == 'JointNode':
                     algo = Joint(
@@ -94,6 +88,7 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         del node.walkstmt
 
     def walk_RequestNode(self, node, child_retval):
+        return node
         context = None
 
         # walk through graph

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 
-class Algorithm(object):
+class Algorithm(dict):
     def __init__(self, graphmgr, *args, **kwargs):
         super(Algorithm, self).__init__(*args, **kwargs)
 
-        self.graphmgr
+        self['__class__'] = self.__class__.__name__
+        self.graphmgr = graphmgr
 
     def map(self, mapper, inputdata):
         raise NotImplementedError()

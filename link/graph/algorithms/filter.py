@@ -6,8 +6,9 @@ from link.fulltext.filter import FulltextMatch
 
 class Filter(Algorithm):
     def __init__(self, graphmgr, query, *args, **kwargs):
-        super(Algorithm, self).__init__(graphmgr, *args, **kwargs)
+        super(Filter, self).__init__(graphmgr, *args, **kwargs)
 
+        self['query'] = query
         self.query = FulltextMatch(query)
 
     def map(self, mapper, document):
