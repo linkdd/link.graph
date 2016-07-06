@@ -5,15 +5,20 @@ from link.fulltext.filter import FulltextMatch
 
 
 class Filter(Algorithm):
-    def __init__(self, graphmgr, query, *args, **kwargs):
+    def __init__(self, graphmgr, step, *args, **kwargs):
         super(Filter, self).__init__(graphmgr, *args, **kwargs)
 
-        self['query'] = query
-        self.query = FulltextMatch(query)
+        self['query'] = step.query
+        self['alias'] = step.alias
+
+        self.query = FulltextMatch(step.query)
 
     def map(self, mapper, document):
         if self.query(document):
             mapper.emit('filtered', document)
 
     def reduce(self, reducer, key, values):
+        if self['alias'] is not None:
+            self.graphmgr.alias(self['alias'], values)
+
         return values

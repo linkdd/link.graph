@@ -71,7 +71,7 @@ class GraphDSLNodeWalker(DepthFirstWalker):
             for step in path:
                 if step.__class__.__name__ == 'AliasedElementsNode':
                     walk_sequence.append(
-                        Filter(self.graphmgr, step.query)
+                        Filter(self.graphmgr, step)
                     )
 
                 elif step.__class__.__name__ == 'JointNode':
@@ -88,7 +88,6 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         del node.walkstmt
 
     def walk_RequestNode(self, node, child_retval):
-        return node
         context = None
 
         # walk through graph

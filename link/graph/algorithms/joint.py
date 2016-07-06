@@ -54,23 +54,23 @@ class Joint(Algorithm):
     def map_nodes(self, mapper, node):
         joint = self['nodes']
 
-        if joint['fw'] != '-':
+        if joint.fw != '-':
             nodes = self.walk(
                 [node],
-                joint['card']['begin'],
-                joint['card']['end'],
+                joint.card.begin,
+                joint.card.end,
                 Forward(self.graphmgr)
             )
 
-        if joint['bw'] != '-':
+        if joint.bw != '-':
             nodes = self.walk(
                 [node],
-                joint['card']['begin'],
-                joint['card']['end'],
+                joint.card.begin,
+                joint.card.end,
                 Backward(self.graphmgr)
             )
 
-        filter_algo = Filter(self.graphmgr, joint['aelts']['query'])
+        filter_algo = Filter(self.graphmgr, joint.aelts)
 
         for node in self.graphmgr.call_algorithm(nodes, filter_algo):
             mapper.emit('joint_nodes', node)
