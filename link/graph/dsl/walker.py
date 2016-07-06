@@ -105,7 +105,7 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         elif initial[0] == 'RELS':
             f = self.graphmgr.relationships_store.get_feature('fulltext')
 
-        context = f(initial[1])
+        context = f.search(initial[1])
 
         for step in node.walkthrough.sequence[1:]:
             context = self.graphmgr.call_algorithm(context, step)
