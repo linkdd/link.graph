@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from link.graph.algorithms.base import Algorithm
-from link.graph.algorithms.backward import Backward
-from link.graph.algorithms.forward import Forward
+from link.graph.algorithms.backward import NodeBackward, RelationBackward
+from link.graph.algorithms.forward import NodeForward, RelationForward
 from link.graph.algorithms.filter import Filter
 
 
@@ -23,8 +23,8 @@ class Joint(Algorithm):
         self['relationships'] = relationships
         self['graphs'] = graphs
 
-    def walk(self, nodes, begin, end, algo):
-        result = nodes
+    def walk(self, dataset, begin, end, algo):
+        result = dataset
 
         for i in range(end):
             if i < begin:
@@ -53,26 +53,25 @@ class Joint(Algorithm):
 
     def map_nodes(self, mapper, node):
         joint = self['nodes']
+        filter_algo = Filter(self.graphmgr, joint.aelts)
 
         if joint.fw != '-':
-            nodes = self.walk(
+            result = self.walk(
                 [node],
                 joint.card.begin,
                 joint.card.end,
-                Forward(self.graphmgr)
+                NodeForward(self.graphmgr, filter_algo)
             )
 
         if joint.bw != '-':
-            nodes = self.walk(
+            result = self.walk(
                 [node],
                 joint.card.begin,
                 joint.card.end,
-                Backward(self.graphmgr)
+                NodeBackward(self.graphmgr, filter_algo)
             )
 
-        filter_algo = Filter(self.graphmgr, joint.aelts)
-
-        for node in self.graphmgr.call_algorithm(nodes, filter_algo):
+        for node in result:
             mapper.emit('joint_nodes', node)
 
     def map_relationships(self, mapper, node):
@@ -81,5 +80,5 @@ class Joint(Algorithm):
     def map_graphs(self, mapper, node):
         pass
 
-    def reduce(self, reducer, key, nodes):
-        return nodes
+    def reduce(self, reducer, key, values):
+        return values
