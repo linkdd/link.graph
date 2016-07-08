@@ -18,7 +18,4 @@ class Filter(Algorithm):
             mapper.emit('filtered', document)
 
     def reduce(self, reducer, key, values):
-        if self['alias'] is not None:
-            self.graphmgr.alias(self['alias'], values)
-
-        return values
+        return values, self['alias']

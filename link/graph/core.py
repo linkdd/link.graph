@@ -45,11 +45,6 @@ class GraphManager(object):
         self.parser = module.GraphDSLParser(semantics=ModelBuilderSemantics())
         self.walker = GraphDSLNodeWalker(self)
 
-        self.aliased = {}
-
-    def alias(self, name, data):
-        self.aliased[name] = data
-
     def call_algorithm(self, dataset, algo):
         return self.parallel_backend(algo.map, algo.reduce, dataset)
 

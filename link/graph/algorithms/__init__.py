@@ -3,7 +3,7 @@
 from .backward import NodeBackward, RelationBackward
 from .forward import NodeForward, RelationForward
 from .filter import Filter
-from .joint import Joint
+from .follow import Follow
 
 
 __all__ = [
@@ -12,5 +12,5 @@ __all__ = [
     'RelationForward',
     'NodeBackward',
     'RelationBackward',
-    'Joint'
+    'Follow'
 ]

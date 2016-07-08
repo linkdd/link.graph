@@ -1,13 +1,35 @@
 FROM
-    NODES(mynode1, mynode2) { myprop = "val0", foo != "bar" } AS elt0
-    < RELS( myrel1, myrel2, myrel3 ) { weight > 2 } AS elt1 - 5..10 DEPTH
+    RELS(r2) { weight > 5 } AS elt2
 FROM
-    RELS( myrel2 , myrel3 ) { weight > 5 } AS elt3
-WHERE
-    elt1.myprop != "val0"
-AND
-    elt2.weight > 3
-AND
-    elt3.foo = "bar"
+    NODES(n1, n2) { foo != "bar" } AS elt0
+
+    FOLLOW DEPTH BACKWARD 5..10
+        RELS(r1, r2) { weight > 2 } AS elt1
+
+INSERT
+    NODE(n2) { foo = "bar" } AS elt18
+INSERT
+    REL(r3) { weight = 2 }
+    FROM
+        elt0
+    TO
+        elt18
+
 SELECT
-    elt3
+    elt0, elt1, elt2
+WHERE
+    elt2.weight < 17
+AND
+    elt0.bar = "baz"
+
+UPDATE (
+    elt2.weight = 17,
+    elt0.bar = "baz"
+)
+
+DELETE
+    elt0, elt1, elt2
+WHERE
+    elt2.weight < 17
+AND
+    elt0.bar = "baz"

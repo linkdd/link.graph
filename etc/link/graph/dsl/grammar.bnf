@@ -1,19 +1,17 @@
-(* keywords definition *)
+(* keyword definition *)
 
 @@keyword :: TRUE FALSE
+@@keyword :: RELS NODES
+@@keyword :: DEPTH BREADTH
+@@keyword :: BACKWARD FORWARD BOTH
+@@keyword :: FOLLOW
+@@keyword :: FROM TO
+@@keyword :: NODE REL
+@@keyword :: WHERE AND OR
 @@keyword :: AS
-@@keyword :: ELTS
-@@keyword :: NODES
-@@keyword :: RELS
-@@keyword :: GRAPHS
-@@keyword :: DEPTH WIDE
-@@keyword :: FROM
-@@keyword :: WHERE AND
-@@keyword :: INSERT
-@@keyword :: SELECT
-@@keyword :: SET UNSET ADDTOSET DELFROMSET
-@@keyword :: UPDATE
-@@keyword :: DELETE
+@@keyword :: INSERT SELECT UPDATE DELETE
+
+(*/keyword definition *)
 
 (* symbols definition *)
 
@@ -21,83 +19,91 @@ digit = /[0-9]/ ;
 symbol = /[a-zA-Z]/ ;
 characters = /\w*/ ;
 
-(* basic type definition *)
+(*/symbols definition *)
 
-@name
-identifier::IdentifierNode = name:(/[_a-zA-Z][a-zA-Z0-9_]*/) ;
+(* basic type definitions *)
 string::StringNode = '"' value:characters '"' | "'" value:characters "'" ;
 natural::NaturalNode = value:({ digit }+) ;
 sign = "+" | "-" ;
 integer::IntegerNode = value:([ sign:sign ] int:natural) ;
 decimal::DecimalNode = value:([ sign:sign ] int:natural "." dec:natural) ;
 boolean::BooleanNode = value:("TRUE" | "FALSE") ;
+(*/basic type definitions *)
 
-(* complex type definition *)
+(* basic definitions *)
 
-value::ValueNode = value:string | value:integer | value:decimal | value:boolean ;
-property_name = identifier ;
-alias = identifier ;
-aliased_property::AliasedProperty = alias:alias "." propname:property_name ;
-aliases = ",".{ alias:alias } ;
-cond_operator = ">" | "<" | ">=" | "<=" | "=" | "!=" | "~=" ;
+@name
+identifier::IdentifierNode = name:(/[_a-zA-Z][a-zA-Z0-9_]*/) ;
+alias::AliasNode = name:identifier ;
+type::TypeNode = name:identifier ;
+value::ValueNode = value:(string | integer | decimal | boolean) ;
 
-expression::ExpressionNode = value:value | aprop:aliased_property ;
+operator::OperatorNode = value:("<" | "<=" | "==" | "!=" | ">=" | ">" | "~=") ;
+condition::ConditionNode = propname:identifier op:operator value:value ;
+assign::AssignNode = propname:identifier "=" value:value ;
 
-type = identifier ;
-types = ",".{ type } ;
-property_cond::PropertyConditionNode = propname:property_name op:cond_operator expr:expression ;
-properties_cond::PropertyConditionsBlockNode = conditions:(",".{ property_cond }) ;
+(*/basic definitions *)
 
-(* walkthrough elements definition *)
+(* Type list *)
+type_list::TypeListNode = "(" values:(",".{ type }) ")" ;
+(*/Type list *)
 
-elt_type = "NODES" | "RELS" ;
-elements::ElementsNode = elt_type:elt_type "(" types:types ")" [ "{" props:properties_cond "}" ] ;
-aliased_elements::AliasedElementsNode = elts:elements [ "AS" alias:alias ] ;
+(* Property filter *)
+prop_filter::PropertyFilterNode = "{" conditions:(",".{ condition }) "}" ;
+(*/Property filter *)
 
-graph_joint = "ELTS" ;
-elt_joint = "GRAPHS" ;
+(* Walk filter *)
+relation_filter::RelationFilterNode = "RELS" types:type_list properties:prop_filter ;
+node_filter::NodeFilterNode = "NODES" types:type_list properties:prop_filter ;
+walkfilter::WalkFilterNode = (typed:relation_filter | typed:node_filter) [ "AS" alias:alias ] ;
+(*/Walk filter *)
 
-backward = "<" | "-" ;
-forward = "-" | ">" ;
-cardinality::CardinalityNode = [ begin:natural ] [ ".." ] [ end:natural ] ;
-walk_mode = "DEPTH" | "WIDE" ;
-base_joint = bw:backward aelts:aliased_elements fw:forward [ card:cardinality ] [ wmode:walk_mode ] ;
+(* FOLLOW *)
+follow_type::FollowTypeNode = value:("DEPTH" | "BREADTH") ;
+direction::DirectionNode = value:("BACKWARD" | "FORWARD" | "BOTH") ;
+cardinality::CardinalityNode = begin:natural ".." end:natural ;
+follow::FollowNode = "FOLLOW" type:follow_type direction:direction cardinality:cardinality [ filter:walkfilter ] ;
+(*/FOLLOW *)
 
-node_joint = base_joint ;
-relationship_joint = base_joint ;
+(* FROM *)
+walkstmt::WalkStatementNode = "FROM" filter:walkfilter [ follow:{ follow }+ ] ;
+(*/FROM *)
 
-joint::JointNode = gjoint:graph_joint | ejoint:elt_joint | njoint:node_joint | rjoint:relationship_joint ;
+(* Request filter *)
+andreqfilter::AndRequestFilterNode = left:(reqfilter | termreqfilter) "AND" right:(termreqfilter | reqfilter) ;
+orreqfilter::OrRequestFilterNode = left:(reqfilter | termreqfilter) "OR" right:(termreqfilter | reqfilter) ;
+termreqfilter::TermRequestFilterNode = alias:alias "." propname:identifier op:operator value:value ;
+reqfilter::RequestFilterNode = search:(andreqfilter | orreqfilter | termreqfilter) ;
+(*/Request filter *)
 
-path::PathNode = aelts:aliased_elements { joint:joint [ aelts:aliased_elements ] } ;
-walkthrough_stmt::WalkthroughStatementNode = "FROM" path:path ;
-walkthrough_stmts::WalkthroughBlockNode = { walkstmt+:walkthrough_stmt }+ ;
+(* CREATE *)
+eltprops::ElementPropertiesNode = "{" assignations:(",".{ assign }) "}" ;
 
-(* filter elements definition *)
+node_type::NodeTypeNode = "NODE" types:type_list properties:eltprops [ "AS" alias:alias ] ;
 
-condition = prop:aliased_property op:cond_operator expr:expression ;
-filter_stmt = "WHERE" "AND".{ filter+:condition } ;
+links::LinksNode = "FROM" source:(alias | node_filter) "TO" target:(alias | node_filter) ;
+relation_type::RelationTypeNode = "REL" types:type_list properties:eltprops [ "AS" alias:alias ] links:links ;
 
-(* CRUD elements definition *)
+createstmt::CreateStatementNode = "INSERT" (typed:node_type | typed:relation_type) ;
+(*/CREATE *)
 
-new_property = propname:property_name "=" expr:expression ;
-new_properties = ",".{ new_property } ;
-new_cardinality = natural ;
-new_data = "(" type:type props+:new_properties ")" [ "AS" alias:alias ] [ card:new_cardinality ] ;
-create_stmt::CreateStatementNode = "INSERT" ",".{ data+:new_data } ;
+(* READ *)
+readstmt::ReadStatementNode = "SELECT" aliases:(",".{ alias }) "WHERE" filter:reqfilter ;
+(*/READ *)
 
-read_stmt::ReadStatementNode = "SELECT" aliases+:aliases ;
+(* UPDATE *)
+updatestmt::UpdateStatementNode = "UPDATE" "(" assignations:(",".{ assign }) ")" ;
+(*/UPDATE *)
 
-update_keyword = "SET" | "UNSET" | "ADDTOSET" | "DELFROMSET" ;
-update_alias = alias:alias op:update_keyword expr:expression ;
-update_data = ",".{ update_alias } ;
-update_stmt::UpdateStatementNode = "UPDATE" data+:update_data ;
+(* DELETE *)
+deletestmt::DeleteStatementNode = "DELETE" aliased:(",".{ alias }) "WHERE" filter:reqfilter ;
+(*/DELETE *)
 
-delete_stmt::DeleteStatementNode = "DELETE" aliases+:aliases ;
+(* Request *)
+walkthrough::WalkthroughBlock = statements:{ walkstmt }+ ;
+crud::CRUDBlock = statements:{ createstmt | readstmt | updatestmt | deletestmt }+ ;
 
-crud_stmt::CRUDStatementNode = create:create_stmt | read:read_stmt | update:update_stmt | delete:delete_stmt ;
-
-(* Request final definition *)
-
-request::RequestNode = walkthrough:walkthrough_stmts filter:filter_stmt crud:crud_stmt ;
+request::RequestNode = [ walkthrough:walkthrough ] crud:crud ;
+(*/Request *)
 
 start = request ;

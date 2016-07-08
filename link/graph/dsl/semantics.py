@@ -62,7 +62,7 @@ class GraphDSLSemantics(object):
     def parse_query_types(self, node):
         types = [
             t.name
-            for t in node.elts.types
+            for t in node.types
         ]
 
         return 'type_set:({0})'.format(' OR '.join(types))
@@ -70,41 +70,41 @@ class GraphDSLSemantics(object):
     def parse_query_conditions(self, node):
         prop_queries = []
 
-        for condition in node.elts.props.conditions:
+        for condition in node.properties:
             if condition.op == '>':
                 prop_query = '{0}:[{1} TO *]'.format(
-                    condition.propname.name,
-                    condition.expr.value.value
+                    condition.propname,
+                    condition.value
                 )
 
             elif condition.op == '>=':
                 prop_query = '{0}:[{1} TO *]'.format(
-                    condition.propname.name,
-                    condition.expr.value.value - 1
+                    condition.propname,
+                    condition.value - 1
                 )
 
             elif condition.op == '<':
                 prop_query = '{0}:[* TO {1}]'.format(
-                    condition.propname.name,
-                    condition.expr.value.value - 1
+                    condition.propname,
+                    condition.value - 1
                 )
 
             elif condition.op == '>=':
                 prop_query = '{0}:[* TO {1}]'.format(
-                    condition.propname.name,
-                    condition.expr.value.value
+                    condition.propname,
+                    condition.value
                 )
 
             elif condition.op in ['=', '~=']:
                 prop_query = '{0}:{1}'.format(
-                    condition.propname.name,
-                    condition.expr.value.value
+                    condition.propname,
+                    condition.value
                 )
 
             elif condition.op == '!=':
                 prop_query = '-{0}:{1}'.format(
-                    condition.propname.name,
-                    condition.expr.value.value
+                    condition.propname,
+                    condition.value
                 )
 
             prop_queries.append(prop_query)
