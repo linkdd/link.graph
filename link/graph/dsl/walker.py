@@ -121,14 +121,15 @@ class GraphDSLNodeWalker(DepthFirstWalker):
                 context = self.graphmgr.call_algorithm(context, algo)
 
             for statement in statements[1:]:
-                algo = Filter(self.graphmgr, statement.filter)
-                context, alias = self.graphmgr.call_algorithm(context, algo)
-
-                if alias is not None:
-                    aliased_sets[initial_req.alias] = context
-
-                algo = Follow(self.graphmgr, statement.follow)
+                algo = Filter(self.graphmgr, statement.filter.query)
                 context = self.graphmgr.call_algorithm(context, algo)
+
+                if statement.filter.alias is not None:
+                    aliased_sets[statement.filter.alias] = context
+
+                if statement.follow is not None:
+                    algo = Follow(self.graphmgr, statement.follow)
+                    context = self.graphmgr.call_algorithm(context, algo)
 
         return context, aliased_sets
 
