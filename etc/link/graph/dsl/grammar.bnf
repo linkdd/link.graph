@@ -9,6 +9,7 @@
 @@keyword :: NODE REL
 @@keyword :: WHERE AND OR
 @@keyword :: AS
+@@keyword :: SET UNSET ADDTOSET DELFROMSET
 @@keyword :: INSERT SELECT UPDATE DELETE
 
 (*/keyword definition *)
@@ -38,9 +39,9 @@ alias::AliasNode = name:identifier ;
 type::TypeNode = name:identifier ;
 value::ValueNode = value:(string | integer | decimal | boolean) ;
 
-operator::OperatorNode = value:("<" | "<=" | "==" | "!=" | ">=" | ">" | "~=") ;
-condition::ConditionNode = propname:identifier op:operator value:value ;
-assign::AssignNode = propname:identifier "=" value:value ;
+updateop::UpdateOperatorNode = value:("SET" | "ADDTOSET" | "UNSET" | "DELFROMSET");
+condop::ConditionalOperatorNode = value:("<" | "<=" | "=" | "!=" | ">=" | ">" | "~=") ;
+condition::ConditionNode = propname:identifier op:condop value:value ;
 
 (*/basic definitions *)
 
@@ -70,13 +71,18 @@ walkstmt::WalkStatementNode = "FROM" filter:walkfilter [ follow:{ follow }+ ] ;
 (*/FROM *)
 
 (* Request filter *)
+termreqfilter::TermRequestFilterNode = alias:alias "." propname:identifier op:condop value:value ;
 andreqfilter::AndRequestFilterNode = left:(reqfilter | termreqfilter) "AND" right:(termreqfilter | reqfilter) ;
 orreqfilter::OrRequestFilterNode = left:(reqfilter | termreqfilter) "OR" right:(termreqfilter | reqfilter) ;
-termreqfilter::TermRequestFilterNode = alias:alias "." propname:identifier op:operator value:value ;
-reqfilter::RequestFilterNode = search:(andreqfilter | orreqfilter | termreqfilter) ;
+search::SearchNode = value:(andreqfilter | orreqfilter | termreqfilter) ;
+reqfilter::RequestFilterNode = search:search ;
 (*/Request filter *)
 
 (* CREATE *)
+assignset::AssignSetNode = "SET" propname:identifier value:value ;
+assignaddtoset::AssignAddNode = "ADDTOSET" propname:identifier value:value ;
+assign::AssignNode = value:(assignset | assignaddtoset) ;
+
 eltprops::ElementPropertiesNode = "{" assignations:(",".{ assign }) "}" ;
 
 node_type::NodeTypeNode = "NODE" types:type_list properties:eltprops [ "AS" alias:alias ] ;
@@ -92,16 +98,23 @@ readstmt::ReadStatementNode = "SELECT" aliases:(",".{ alias }) "WHERE" filter:re
 (*/READ *)
 
 (* UPDATE *)
-updatestmt::UpdateStatementNode = "UPDATE" "(" assignations:(",".{ assign }) ")" ;
+updatesetprop::UpdateSetPropertyNode = "SET" alias:alias "." propname:identifier value:value ;
+updateunsetprop::UpdateUnsetPropertyNode = "UNSET" alias:alias "." propname:identifier ;
+updateaddprop::UpdateAddPropertyNode = "ADDTOSET" alias:alias "." propname:identifier value:value ;
+updatedelprop::UpdateDelPropertyNode = "DELFROMSET" alias:alias "." propname:identifier value:value ;
+updateprop::UpdatePropertyNode = value:(updatesetprop | updateunsetprop | updateaddprop | updatedelprop) ;
+updatestmt::UpdateStatementNode = "UPDATE" "(" updates:{ updateprop }+ ")" ;
 (*/UPDATE *)
 
 (* DELETE *)
-deletestmt::DeleteStatementNode = "DELETE" aliased:(",".{ alias }) "WHERE" filter:reqfilter ;
+deletestmt::DeleteStatementNode = "DELETE" aliases:(",".{ alias }) [ "WHERE" filter:reqfilter ] ;
 (*/DELETE *)
 
 (* Request *)
 walkthrough::WalkthroughBlock = statements:{ walkstmt }+ ;
-crud::CRUDBlock = statements:{ createstmt | readstmt | updatestmt | deletestmt }+ ;
+
+crudstmt::CRUDStatementNode = statement:(createstmt | readstmt | updatestmt | deletestmt) ;
+crud::CRUDBlock = statements:{ crudstmt }+ ;
 
 request::RequestNode = [ walkthrough:walkthrough ] crud:crud ;
 (*/Request *)

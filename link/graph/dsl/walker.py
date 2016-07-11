@@ -47,13 +47,40 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         node.name = node.name.name
 
     def walk_ConditionNode(self, node, children_retval):
-        node.propname = node.propname.name
         node.op = node.op.value
+        node.propname = node.propname.name
         node.value = node.value.value
 
-    def walk_AssignNode(self, node, children_retval):
+    def walk_AssignSetNode(self, node, children_retval):
         node.propname = node.propname.name
         node.value = node.value.value
+
+    def walk_AssignAddNode(self, node, children_retval):
+        node.propname = node.propname.name
+        node.value = node.value.value
+
+    def walk_UpdateSetPropertyNode(self, node, children_retval):
+        node.alias = node.alias.name
+        node.propname = node.propname.name
+        node.value = node.value.value
+
+    def walk_UpdateAddPropertyNode(self, node, children_retval):
+        node.alias = node.alias.name
+        node.propname = node.propname.name
+        node.value = node.value.value
+
+    def walk_UpdateUnsetPropertyNode(self, node, children_retval):
+        node.alias = node.alias.name
+        node.propname = node.propname.name
+
+    def walk_UpdateDelPropertyNode(self, node, children_retval):
+        node.alias = node.alias.name
+        node.propname = node.propname.name
+        node.value = node.value.value
+
+    def walk_WalkFilterNode(self, node, children_retval):
+        if node.alias is not None:
+            node.alias = node.alias.name
 
     def walk_NodeFilterNode(self, node, children_retval):
         node.properties = node.properties.conditions
@@ -77,6 +104,55 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         node.type = node.type.value
         node.direction = node.direction.value
 
+    def walk_NodeTypeNode(self, node, children_retval):
+        if node.alias is not None:
+            node.alias = node.alias.name
+
+        node.types = [t.name for t in node.types.values_]
+        node.properties = node.properties.assignations
+
+    def walk_RelationTypeNode(self, node, children_retval):
+        if node.alias is not None:
+            node.alias = node.alias.name
+
+        node.types = [t.name for t in node.types.values_]
+        node.properties = node.properties.assignations
+
+    def walk_TermRequestFilterNode(self, node, children_retval):
+        node.alias = node.alias.name
+        node.op = node.op.value
+        node.propname = node.propname.name
+        node.value = node.value.value
+
+    def walk_RequestFilterNode(self, node, children_retval):
+        node.search = node.search.value
+
+    def walk_CreateStatementNode(self, node, children_retval):
+        node.typed.properties = [
+            prop.value
+            for prop in node.typed.properties
+        ]
+
+    def walk_ReadStatementNode(self, node, children_retval):
+        node.filter = node.filter.search
+        node.aliases = [
+            alias.name
+            for alias in node.aliases
+        ]
+
+    def walk_UpdateStatementNode(self, node, children_retval):
+        node.updates = [
+            update.value
+            for update in node.updates
+        ]
+
+    def walk_DeleteStatementNode(self, node, children_retval):
+        node.filter = node.filter.search
+        node.aliases = [
+            alias.name
+            for alias in node.aliases
+        ]
+
     def walk_WalkthroughBlock(self, node, children_retval):
         node.statements = list(reversed(node.statements))
 
@@ -89,8 +165,10 @@ class GraphDSLNodeWalker(DepthFirstWalker):
 
         node.crud = node.crud.statements
 
-        context, aliased_sets = self.do_walkthrough(node.walkthrough)
-        result = self.do_crud(node.crud, context, aliased_sets)
+        return node
+
+        aliased_sets = self.do_walkthrough(node.walkthrough)
+        result = self.do_crud(node.crud, aliased_sets)
 
         return result
 
@@ -109,19 +187,19 @@ class GraphDSLNodeWalker(DepthFirstWalker):
 
         if len(statements) > 0:
             initial_req = statements[0].filter
-            store = self._get_storage(initial_req)
+            store = self._get_storage(initial_req.typed)
 
-            context = store.search(initial_req.query)
+            context = store.search(initial_req.typed.query)
 
             if initial_req.alias is not None:
                 aliased_sets[initial_req.alias] = context
 
-            if initial_req.follow is not None:
-                algo = Follow(self.graphmgr, initial_req.follow)
+            if statements[0].follow is not None:
+                algo = Follow(self.graphmgr, statements[0].follow)
                 context = self.graphmgr.call_algorithm(context, algo)
 
             for statement in statements[1:]:
-                algo = Filter(self.graphmgr, statement.filter.query)
+                algo = Filter(self.graphmgr, statement.filter.typed.query)
                 context = self.graphmgr.call_algorithm(context, algo)
 
                 if statement.filter.alias is not None:
@@ -131,7 +209,62 @@ class GraphDSLNodeWalker(DepthFirstWalker):
                     algo = Follow(self.graphmgr, statement.follow)
                     context = self.graphmgr.call_algorithm(context, algo)
 
-        return context, aliased_sets
+        return aliased_sets
 
-    def do_crud(self, statements, context, aliased_sets):
-        return None
+    def do_crud(self, statements, aliased_sets):
+        result = []
+
+        for statement in statements:
+            methodname = 'do_{0}'.format(statement.__class__.__name__)
+            method = getattr(self, methodname, None)
+
+            if method is not None:
+                result += method(statement, aliased_sets)
+
+        return result
+
+    def do_CreateStatementNode(self, statement, aliased_sets):
+        if statement.typed.__class__.__name__ == 'NodeTypeNode':
+            store = self.graphmgr.nodes_store
+            schema = 'node'
+
+        elif statement.typed.__class__.__name__ == 'RelationTypeNode':
+            store = self.graphmgr.relationships_store
+            schema = 'relationship'
+
+        f = store.get_feature('model')
+        Model = f(schema)
+
+        properties = {
+            p.propname: p.value
+            for p in statement.typed.properties
+        }
+
+        obj = Model(
+            type_set=[
+                t.name
+                for t in statement.typed.types
+            ],
+            **properties
+        )
+
+        obj.save()
+
+        if statement.typed.alias is not None:
+            alias = statement.typed.alias
+
+            if alias not in aliased_sets:
+                aliased_sets[alias] = []
+
+            aliased_sets[alias].append(obj)
+
+        return []
+
+    def do_UpdateStatementNode(self, statement, aliased_sets):
+        for assign in statement.assignations:
+            if assign.alias in aliased_sets:
+                for obj in aliased_sets[assign.alias]:
+                    # do update
+                    pass
+
+        return []

@@ -7,9 +7,13 @@ FROM
         RELS(r1, r2) { weight > 2 } AS elt1
 
 INSERT
-    NODE(n2) { foo = "bar" } AS elt18
+    NODE(n2) {
+        ADDTOSET foo "bar"
+    } AS elt18
 INSERT
-    REL(r3) { weight = 2 }
+    REL(r3) {
+        SET weight 2
+    }
     FROM
         elt0
     TO
@@ -23,8 +27,10 @@ AND
     elt0.bar = "baz"
 
 UPDATE (
-    elt2.weight = 17,
-    elt0.bar = "baz"
+    SET elt2.weight 17
+    ADDTOSET elt0.bar "baz"
+    UNSET elt1.foo
+    DELFROMSET elt0.bar "biz"
 )
 
 DELETE
