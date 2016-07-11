@@ -5,6 +5,9 @@ from .forward import NodeForward, RelationForward
 from .filter import Filter
 from .follow import Follow
 
+from .update import Update
+from .link import Link
+
 
 __all__ = [
     'Filter',
@@ -12,5 +15,7 @@ __all__ = [
     'RelationForward',
     'NodeBackward',
     'RelationBackward',
-    'Follow'
+    'Follow',
+    'Update',
+    'Link'
 ]

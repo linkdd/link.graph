@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from link.graph.algorithms import Filter, Follow, Update, Link
 from link.graph.dsl.semantics import GraphDSLSemantics
-from link.graph.algorithms import Filter, Follow
 
 from grako.model import DepthFirstWalker
 
@@ -225,46 +225,81 @@ class GraphDSLNodeWalker(DepthFirstWalker):
 
     def do_CreateStatementNode(self, statement, aliased_sets):
         if statement.typed.__class__.__name__ == 'NodeTypeNode':
-            store = self.graphmgr.nodes_store
-            schema = 'node'
+            self.do_create_node(statement.typed, aliased_sets)
 
         elif statement.typed.__class__.__name__ == 'RelationTypeNode':
-            store = self.graphmgr.relationships_store
-            schema = 'relationship'
+            self.do_create_relations(statement.typed, aliased_sets)
 
-        f = store.get_feature('model')
-        Model = f(schema)
+        return []
+
+    def do_create_node(self, node, aliased_sets):
+        f = self.graphmgr.nodes_store.get_feature('model')
+        Model = f('node')
 
         properties = {
             p.propname: p.value
-            for p in statement.typed.properties
+            for p in node.properties
         }
 
         obj = Model(
             type_set=[
                 t.name
-                for t in statement.typed.types
+                for t in node.types
             ],
             **properties
         )
 
         obj.save()
 
-        if statement.typed.alias is not None:
-            alias = statement.typed.alias
+        if node.alias is not None:
+            alias = node.alias
 
             if alias not in aliased_sets:
                 aliased_sets[alias] = []
 
             aliased_sets[alias].append(obj)
 
-        return []
+    def do_create_relations(self, node, aliased_sets):
+        f = self.graphmgr.nodes_store.get_feature('model')
+        Model = f('node')
+
+        target = node.links.target
+        source = node.links.source
+
+        if target.__class__.__name__ == 'AliasNode':
+            target = aliased_sets[target.name]
+
+        elif target.__class__.__name__ == 'NodeFilterNode':
+            store = self._get_storage(target)
+            target = store.search(target.query)
+
+        if source.__class__.__name__ == 'AliasNode':
+            source = aliased_sets[source.name]
+
+        elif source.__class__.__name__ == 'NodeFilterNode':
+            store = self._get_storage(source)
+            source = store.search(source.query)
+
+        target = [Model(t) for t in target]
+        source = [Model(s) for s in source]
+
+        algo = Link(self.graphmgr, node)
+        dataset = [
+            [s, t]
+            for s in source
+            for t in target
+        ]
+
+        result = self.graphmgr.call_algorithm(dataset, algo)
+
+        for alias, objects in result:
+            aliased_sets[alias] = objects
 
     def do_UpdateStatementNode(self, statement, aliased_sets):
-        for assign in statement.assignations:
-            if assign.alias in aliased_sets:
-                for obj in aliased_sets[assign.alias]:
-                    # do update
-                    pass
+        algo = Update(self.graphmgr, aliased_sets)
+        result = self.graphmgr.call_algorithm(statement.assignations, algo)
+
+        for alias, objects in result:
+            aliased_sets[alias] = objects
 
         return []
