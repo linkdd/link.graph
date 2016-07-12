@@ -3,7 +3,7 @@
 from b3j0f.conf import Configurable, category, Parameter
 
 from link.graph.dsl.generator import single_parser_per_scope
-from link.graph.dsl.walker import GraphDSLNodeWalker
+from link.graph.dsl.walker.core import GraphDSLNodeWalker
 
 from link.middleware.core import Middleware
 from link.graph import CONF_BASE_PATH

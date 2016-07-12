@@ -15,7 +15,7 @@ INSERT
         SET weight 2
     }
     FROM
-        elt0
+        NODES(n4) { foo = "buzz" }
     TO
         elt18
 
