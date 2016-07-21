@@ -7,9 +7,13 @@ from link.graph import __version__
 
 from prompt_toolkit.key_binding.manager import KeyBindingManager
 from prompt_toolkit.layout.lexers import PygmentsLexer
+from prompt_toolkit.styles import style_from_pygments
 from prompt_toolkit.token import Token
 from prompt_toolkit.keys import Keys
 from prompt_toolkit import prompt
+
+from pygments.styles import get_style_by_name
+
 from six import print_
 
 
@@ -75,7 +79,11 @@ class GraphCLI(object):
                     get_title=self.get_title,
                     get_continuation_tokens=self.continuation_tokens,
                     key_bindings_registry=self.kbmgr.registry,
-                    lexer=PygmentsLexer(GraphDSLLexer)
+                    lexer=PygmentsLexer(GraphDSLLexer),
+                    style=style_from_pygments(
+                        get_style_by_name('vim'),
+                        {}
+                    )
                 )
 
                 request = request.strip()[:-1]
