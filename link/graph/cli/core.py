@@ -96,7 +96,6 @@ class GraphCLI(object):
                         get_style_by_name(self.color_scheme),
                         {}
                     ),
-                    true_color=True,
                     history=self.histmgr.history,
                     enable_history_search=True,
                 )

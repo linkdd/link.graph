@@ -22,7 +22,7 @@ except ImportError:
     paths=CONF_PATH,
     conf=category(
         CATEGORY,
-        Parameter(name='history_size', ptype=int, value=200)
+        Parameter(name='history_size', ptype=int, svalue=200)
     )
 )
 class HistoryManager(object):
@@ -67,7 +67,7 @@ class HistoryManager(object):
                 LIMIT ?
             ''', (self.history_size,))
 
-            for row in commands:
+            for row in reversed(list(commands)):
                 yield row[0]
 
     def add_to_history(self, cmd):
