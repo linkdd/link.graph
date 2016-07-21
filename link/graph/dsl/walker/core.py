@@ -13,8 +13,8 @@ class GraphDSLNodeWalker(DepthFirstWalker):
 
         self.graphmgr = graphmgr
         self.semantics = GraphDSLSemantics()
-        self.walk = Walkthrough(graphmgr)
-        self.crud = CRUDOperations(graphmgr)
+        self.op_walk = Walkthrough(graphmgr)
+        self.op_crud = CRUDOperations(graphmgr)
 
     def walk_StringNode(self, node, children_retval):
         node.value = self.semantics.parse_StringNode(node)
@@ -170,5 +170,5 @@ class GraphDSLNodeWalker(DepthFirstWalker):
 
         return node
 
-        aliased_sets = self.walk(node.walkthrough)
-        return self.crud(node.crud, aliased_sets)
+        aliased_sets = self.op_walk(node.walkthrough)
+        return self.op_crud(node.crud, aliased_sets)
