@@ -3,6 +3,7 @@
 from b3j0f.conf import Configurable, category, Parameter
 
 from link.graph.cli.history import HistoryManager
+from link.graph.cli.completion import GraphCompleter
 from link.graph.cli import CONF_PATH, CATEGORY
 from link.graph.dsl.lexer import GraphDSLLexer
 from link.graph.core import GraphManager
@@ -34,6 +35,7 @@ class GraphCLI(object):
         self.graph = GraphManager()
         self.kbmgr = KeyBindingManager.for_prompt()
         self.histmgr = HistoryManager()
+        self.completer = GraphCompleter()
 
         self.register_shortcuts()
 
@@ -50,18 +52,20 @@ class GraphCLI(object):
             compl = buf.complete_state.current_completion
 
             if compl:
+                compl.text += ' '
                 buf.apply_completion(compl)
 
             else:
                 buf.cancel_completion()
 
-        text = doc.text.strip()
-
-        if len(text) > 0 and text[-1] == ';':
-            buf.accept_action.validate_and_handle(event.cli, buf)
-
         else:
-            buf.newline()
+            text = doc.text.strip()
+
+            if len(text) > 0 and text[-1] == ';':
+                buf.accept_action.validate_and_handle(event.cli, buf)
+
+            else:
+                buf.newline()
 
     def cancel_input(self, event):
         buf = event.current_buffer
@@ -71,6 +75,9 @@ class GraphCLI(object):
 
         else:
             buf.reset()
+
+    def tab_or_complete(self, event):
+        pass
 
     def get_title(self):
         return 'GraphCLI v{0}'.format(__version__)
@@ -96,14 +103,22 @@ class GraphCLI(object):
                         get_style_by_name(self.color_scheme),
                         {}
                     ),
+                    completer=self.completer,
                     history=self.histmgr.history,
                     enable_history_search=True,
                 )
 
-                request = request.strip()[:-1]
-                self.histmgr.add_to_history(request)
-                result = self.graph(request)
-                print_(result)
+                requests = [req.strip() for req in request.split(';')]
+
+                for request in requests:
+                    if request:
+                        try:
+                            result = self.graph(request)
+                            self.histmgr.add_to_history(request)
+                            print_(result)
+
+                        except Exception as err:
+                            print_('Error:', err)
 
             except EOFError:
                 break
