@@ -3,7 +3,7 @@
 from b3j0f.conf import Configurable, category, Parameter
 
 from link.graph.cli.history import HistoryManager
-from link.graph.cli.completion import GraphCompleter
+from link.graph.cli.completion.core import GraphCompleter
 from link.graph.cli import CONF_PATH, CATEGORY
 from link.graph.dsl.lexer import GraphDSLLexer
 from link.graph.core import GraphManager

@@ -33,19 +33,19 @@ class Link(Algorithm):
         if self.node.alias is not None:
             mapper.emit(self.node.alias, obj)
 
-        pair[0].targets_set.add(
+        pair[0].targets_set = set(
             '{0}:{1}'.format(
-                obj[Relationship.DATA_ID],
-                pair[1][Node.DATA_ID]
+                obj[Relationship._DATA_ID],
+                pair[1][Node._DATA_ID]
             )
         )
-        pair[0].n_rels_counter += 1
-        pair[0].neighbors_counter += 1
-        pair[0].n_targets_counter += 1
+        pair[0].n_rels_counter = 1
+        pair[0].neighbors_counter = 1
+        pair[0].n_targets_counter = 1
         pair[0].save()
 
-        pair[1].n_rels_counter += 1
-        pair[1].neighbors_counter += 1
+        pair[1].n_rels_counter = 1
+        pair[1].neighbors_counter = 1
         pair[1].save()
 
     def reduce(self, reducer, alias, objects):
