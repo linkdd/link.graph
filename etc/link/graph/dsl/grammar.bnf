@@ -71,11 +71,12 @@ walkstmt::WalkStatementNode = "FROM" filter:walkfilter [ follow:{ follow }+ ] ;
 (*/FROM *)
 
 (* Request filter *)
-termreqfilter::TermRequestFilterNode = alias:alias "." propname:identifier op:condop value:value ;
+termreqfilter::TermRequestFilterNode = propname:identifier op:condop value:value ;
 andreqfilter::AndRequestFilterNode = left:(reqfilter | termreqfilter) "AND" right:(termreqfilter | reqfilter) ;
 orreqfilter::OrRequestFilterNode = left:(reqfilter | termreqfilter) "OR" right:(termreqfilter | reqfilter) ;
 search::SearchNode = value:(andreqfilter | orreqfilter | termreqfilter) ;
 reqfilter::RequestFilterNode = search:search ;
+aliasedfilter::AliasedFilterNode = alias:alias [ "{" filter:reqfilter "}" ] ;
 (*/Request filter *)
 
 (* CREATE *)
@@ -94,7 +95,7 @@ createstmt::CreateStatementNode = "INSERT" (typed:node_type | typed:relation_typ
 (*/CREATE *)
 
 (* READ *)
-readstmt::ReadStatementNode = "SELECT" aliases:(",".{ alias }) "WHERE" filter:reqfilter ;
+readstmt::ReadStatementNode = "SELECT" filters:{ aliasedfilter }+ ;
 (*/READ *)
 
 (* UPDATE *)
@@ -107,7 +108,7 @@ updatestmt::UpdateStatementNode = "UPDATE" "(" updates:{ updateprop }+ ")" ;
 (*/UPDATE *)
 
 (* DELETE *)
-deletestmt::DeleteStatementNode = "DELETE" aliases:(",".{ alias }) [ "WHERE" filter:reqfilter ] ;
+deletestmt::DeleteStatementNode = "DELETE" filters:{ aliasedfilter }+ ;
 (*/DELETE *)
 
 (* Request *)

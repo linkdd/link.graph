@@ -20,11 +20,9 @@ INSERT
         elt18
 
 SELECT
-    elt0, elt1, elt2
-WHERE
-    elt2.weight < 17
-AND
-    elt0.bar = "baz"
+    elt0 { bar = "baz" AND baz = "foo"  }
+    elt1
+    elt2 { weight < 17 }
 
 UPDATE (
     SET elt2.weight 17
@@ -34,8 +32,6 @@ UPDATE (
 )
 
 DELETE
-    elt0, elt1, elt2
-WHERE
-    elt2.weight < 17
-AND
-    elt0.bar = "baz"
+    elt0 { bar = "baz" AND baz = "foo" }
+    elt1
+    elt2 { weight < 17 }

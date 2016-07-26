@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from link.graph.algorithms.base import Algorithm
-from link.graph.algorithms.backward import NodeBackward, RelationBackward
-from link.graph.algorithms.forward import NodeForward, RelationForward
-from link.graph.algorithms.filter import Filter
 
 
 class Follow(Algorithm):

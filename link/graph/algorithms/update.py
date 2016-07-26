@@ -52,16 +52,14 @@ class _Update(Algorithm):
         obj[self.assign.propname] = self.assign.value
 
     def map_addtoset(self, mapper, obj):
-        obj[self.assign.propname] = self._ensure_set(obj[self.assign.propname])
-        obj[self.assign.propname].add(self.assign.value)
+        obj[self.assign.propname] = set([self.assign.value])
 
     def map_unset(self, mapper, obj):
         if self.assign.propname in obj:
             del obj[self.assign.propname]
 
     def map_delfromset(self, mapper, obj):
-        obj[self.assign.propname] = self._ensure_set(obj[self.assign.propname])
-        obj[self.assign.propname].remove(self.assign.value)
+        obj[self.assign.propname] = set(['-{0}'.format(self.assign.value)])
 
     def reduce(self, reducer, alias, objects):
         return alias, objects

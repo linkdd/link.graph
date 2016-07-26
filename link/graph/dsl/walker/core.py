@@ -122,13 +122,18 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         node.properties = node.properties.assignations
 
     def walk_TermRequestFilterNode(self, node, children_retval):
-        node.alias = node.alias.name
         node.op = node.op.value
         node.propname = node.propname.name
         node.value = node.value.value
 
     def walk_RequestFilterNode(self, node, children_retval):
         node.search = node.search.value
+
+    def walk_AliasedFilterNode(self, node, children_retval):
+        node.alias = node.alias.name
+
+        if node.filter is not None:
+            node.filter = node.filter.search
 
     def walk_CreateStatementNode(self, node, children_retval):
         node.typed.properties = [
@@ -137,11 +142,15 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         ]
 
     def walk_ReadStatementNode(self, node, children_retval):
-        node.filter = node.filter.search
-        node.aliases = [
-            alias.name
-            for alias in node.aliases
-        ]
+        filters = {}
+
+        for nodefilter in node.filters:
+            l = filters.setdefault(nodefilter.alias, [])
+
+            if nodefilter.filter is not None:
+                l.append(nodefilter.filter)
+
+        node.filters = filters
 
     def walk_UpdateStatementNode(self, node, children_retval):
         node.updates = [
@@ -150,11 +159,15 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         ]
 
     def walk_DeleteStatementNode(self, node, children_retval):
-        node.filter = node.filter.search
-        node.aliases = [
-            alias.name
-            for alias in node.aliases
-        ]
+        filters = {}
+
+        for nodefilter in node.filters:
+            l = filters.setdefault(nodefilter.alias, [])
+
+            if nodefilter.filter is not None:
+                l.append(nodefilter.filter)
+
+        node.filters = filters
 
     def walk_WalkthroughBlock(self, node, children_retval):
         node.statements = list(reversed(node.statements))

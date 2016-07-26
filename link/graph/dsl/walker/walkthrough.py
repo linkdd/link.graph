@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from link.graph.algorithms import Filter, Follow
+from link.graph.algorithms import WalkFilter, Follow
 
 
 class Walkthrough(object):
@@ -39,7 +39,7 @@ class Walkthrough(object):
         )
 
     def do_statement(self, statement, context, aliased_sets):
-        algo = Filter(self.graphmgr, statement.filter.typed.query)
+        algo = WalkFilter(self.graphmgr, statement.filter.typed.query)
         context = self.graphmgr.call_algorithm(context, algo)
 
         return self.alias_and_follow_statement(

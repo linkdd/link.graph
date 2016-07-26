@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from link.graph.algorithms import Update, Link
+from link.graph.algorithms import Update, Link, CRUDFilter
+from link.graph.dsl.walker.filter import CRUDFilterWalker
 
 
 class CRUDOperations(object):
@@ -27,6 +28,30 @@ class CRUDOperations(object):
 
             if method is not None:
                 result += method(statement, aliased_sets)
+
+        return result
+
+    def do_ReadStatementNode(self, statement, aliased_sets):
+        walker = CRUDFilterWalker()
+        result = {}
+
+        for alias in statement.filters:
+            mfilter = {'$and': [
+                walker.walk(subfilter)
+                for subfilter in statement.filters[alias]
+            ]}
+
+            if len(mfilter['$and']) == 1:
+                mfilter = mfilter['$and'][0]
+
+            elif len(mfilter['$and']) == 0:
+                mfilter = {}
+
+            algo = CRUDFilter(self.graphmgr, mfilter)
+            result[alias] = self.graphmgr.call_algorithm(
+                aliased_sets[alias],
+                algo
+            )
 
         return result
 
@@ -110,3 +135,11 @@ class CRUDOperations(object):
             aliased_sets[alias] = objects
 
         return []
+
+    def do_DeleteStatementNode(self, statement, aliased_sets):
+        result = self.do_ReadStatementNode(statement, aliased_sets)
+
+        for alias in result:
+            dataset = result[alias]
+
+            # TODO: delete dataset

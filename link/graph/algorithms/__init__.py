@@ -2,7 +2,7 @@
 
 from .backward import NodeBackward, RelationBackward
 from .forward import NodeForward, RelationForward
-from .filter import Filter
+from .filter import WalkFilter, CRUDFilter
 from .follow import Follow
 
 from .update import Update
@@ -10,7 +10,8 @@ from .link import Link
 
 
 __all__ = [
-    'Filter',
+    'WalkFilter',
+    'CRUDFilter',
     'NodeForward',
     'RelationForward',
     'NodeBackward',
