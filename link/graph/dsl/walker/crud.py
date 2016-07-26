@@ -25,9 +25,13 @@ class CRUDOperations(object):
         for statement in statements:
             methodname = 'do_{0}'.format(statement.__class__.__name__)
             method = getattr(self, methodname, None)
+            local_result = None
 
             if method is not None:
-                result += method(statement, aliased_sets)
+                local_result = method(statement, aliased_sets)
+
+            if local_result is not None:
+                result.append(local_result)
 
         return result
 
@@ -61,8 +65,6 @@ class CRUDOperations(object):
 
         elif statement.typed.__class__.__name__ == 'RelationTypeNode':
             self.do_create_relations(statement.typed, aliased_sets)
-
-        return []
 
     def do_create_node(self, node, aliased_sets):
         f = self.graphmgr.nodes_store.get_feature('model')
@@ -133,8 +135,6 @@ class CRUDOperations(object):
 
         for alias, objects in result:
             aliased_sets[alias] = objects
-
-        return []
 
     def do_DeleteStatementNode(self, statement, aliased_sets):
         result = self.do_ReadStatementNode(statement, aliased_sets)
