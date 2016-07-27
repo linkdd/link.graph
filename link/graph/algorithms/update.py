@@ -12,7 +12,7 @@ class Update(Algorithm):
     def map(self, mapper, assign):
         if assign.alias in self.aliased_sets:
             algo = _Update(self.graphmgr, assign)
-            dataset = self.aliased_sets[assign.alias]
+            dataset = self.aliased_sets[assign.alias]['dataset']
 
             alias, objects = self.graphmgr.call_algorithm(dataset, algo)
 

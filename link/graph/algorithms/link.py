@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from link.graph.algorithms.base import Algorithm
+from link.feature import getfeature
 
 
 class Link(Algorithm):
@@ -10,9 +11,9 @@ class Link(Algorithm):
         self.node = node
 
     def map(self, mapper, pair):
-        f = self.graphmgr.relationships_store.get_feature('model')
+        f = getfeature(self.graphmgr.relationships_store, 'model')
         Relationship = f('relationship')
-        f = self.graphmgr.nodes_store.get_feature('model')
+        f = getfeature(self.graphmgr.nodes_store, 'model')
         Node = f('node')
 
         properties = {

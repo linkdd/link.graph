@@ -2,6 +2,7 @@
 
 from link.graph.algorithms import Update, Link, CRUDFilter
 from link.graph.dsl.walker.filter import CRUDFilterWalker
+from link.feature import getfeature
 
 
 class CRUDOperations(object):
@@ -17,7 +18,7 @@ class CRUDOperations(object):
         elif filter_node.__class__.__name__ == 'RelationFilterNode':
             store = self.graphmgr.relationships_store
 
-        return store.get_feature('fulltext')
+        return getfeature(store, 'fulltext')
 
     def __call__(self, statements, aliased_sets):
         result = []
@@ -52,10 +53,13 @@ class CRUDOperations(object):
                 mfilter = {}
 
             algo = CRUDFilter(self.graphmgr, mfilter)
-            result[alias] = self.graphmgr.call_algorithm(
-                aliased_sets[alias],
-                algo
-            )
+            result[alias] = {
+                'type': aliased_sets[alias]['type'],
+                'dataset': self.graphmgr.call_algorithm(
+                    aliased_sets[alias]['dataset'],
+                    algo
+                )
+            }
 
         return result
 
@@ -67,7 +71,7 @@ class CRUDOperations(object):
             self.do_create_relations(statement.typed, aliased_sets)
 
     def do_create_node(self, node, aliased_sets):
-        f = self.graphmgr.nodes_store.get_feature('model')
+        f = getfeature(self.graphmgr.nodes_store, 'model')
         Model = f('node')
 
         properties = {
@@ -89,26 +93,29 @@ class CRUDOperations(object):
             alias = node.alias
 
             if alias not in aliased_sets:
-                aliased_sets[alias] = []
+                aliased_sets[alias] = {
+                    'type': 'node',
+                    'dataset': []
+                }
 
-            aliased_sets[alias].append(obj)
+            aliased_sets[alias]['dataset'].append(obj)
 
     def do_create_relations(self, node, aliased_sets):
-        f = self.graphmgr.nodes_store.get_feature('model')
+        f = getfeature(self.graphmgr.nodes_store, 'model')
         Model = f('node')
 
         target = node.links.target
         source = node.links.source
 
         if target.__class__.__name__ == 'AliasNode':
-            target = aliased_sets[target.name]
+            target = aliased_sets[target.name]['dataset']
 
         elif target.__class__.__name__ == 'NodeFilterNode':
             store = self._get_storage(target)
             target = store.search(target.query)
 
         if source.__class__.__name__ == 'AliasNode':
-            source = aliased_sets[source.name]
+            source = aliased_sets[source.name]['dataset']
 
         elif source.__class__.__name__ == 'NodeFilterNode':
             store = self._get_storage(source)
@@ -127,19 +134,33 @@ class CRUDOperations(object):
         result = self.graphmgr.call_algorithm(dataset, algo)
 
         for alias, objects in result:
-            aliased_sets[alias] = objects
+            aliased_sets[alias] = {
+                'type': 'relationship',
+                'dataset': objects
+            }
 
     def do_UpdateStatementNode(self, statement, aliased_sets):
         algo = Update(self.graphmgr, aliased_sets)
         result = self.graphmgr.call_algorithm(statement.assignations, algo)
 
         for alias, objects in result:
-            aliased_sets[alias] = objects
+            aliased_sets[alias]['dataset'] = objects
 
     def do_DeleteStatementNode(self, statement, aliased_sets):
         result = self.do_ReadStatementNode(statement, aliased_sets)
 
         for alias in result:
-            dataset = result[alias]
+            aliasedset = result[alias]
 
-            # TODO: delete dataset
+            if aliasedset['type'] == 'node':
+                store = self.graphmgr.nodes_store
+
+            elif aliasedset['type'] == 'relationship':
+                store = self.graphmgr.relationships_store
+
+            f = getfeature(, 'model')
+            Model = f(aliasedset['type'])
+
+            for obj in aliasedset['dataset']:
+                if Model._DATA_ID in obj:
+                    del store[obj[Model._DATA_ID]]

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from link.graph.algorithms import WalkFilter, Follow
+from link.feature import getfeature
 
 
 class Walkthrough(object):
@@ -16,11 +17,23 @@ class Walkthrough(object):
         elif filter_node.__class__.__name__ == 'RelationFilterNode':
             store = self.graphmgr.relationships_store
 
-        return store.get_feature('fulltext')
+        return getfeature(store, 'fulltext')
+
+    def _get_alias_type(self, filter_node):
+        if filter_node.__class__.__name__ == 'NodeFilterNode':
+            return 'node'
+
+        elif filter_node.__class__.__name__ == 'RelationFilterNode':
+            return 'relationship'
+
+        return 'unknown'
 
     def alias_and_follow_statement(self, statement, context, aliased_sets):
         if statement.filter.alias is not None:
-            aliased_sets[statement.filter.alias] = context
+            aliased_sets[statement.filter.alias] = {
+                'type': self._get_alias_type(statement.filter.typed),
+                'dataset': context
+            }
 
         if statement.follow is not None:
             algo = Follow(self.graphmgr, statement.follow)

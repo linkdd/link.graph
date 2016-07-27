@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from link.graph.algorithms.base import Algorithm
+from link.feature import getfeature
 
 
 class NodeBackward(Algorithm):
@@ -10,8 +11,8 @@ class NodeBackward(Algorithm):
         self.filter_algo = filter_algo
 
     def map(self, mapper, node):
-        f = self.graphmgr.nodes_store.get_feature('fulltext')
-        parents = f.search('targets_set:"*:{0}"'.format(node[f.DATA_ID]))
+        f = getfeature(self.graphmgr.nodes_store, 'fulltext')
+        parents = f.search('targets_set:"*:{0}"'.format(node[f._DATA_ID]))
 
         for parent in parents:
             mapper.emit('backward', parent)
