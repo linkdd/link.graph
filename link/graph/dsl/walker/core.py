@@ -181,7 +181,5 @@ class GraphDSLNodeWalker(DepthFirstWalker):
 
         node.crud = node.crud.statements
 
-        return node
-
         aliased_sets = self.op_walk(node.walkthrough)
         return self.op_crud(node.crud, aliased_sets)
