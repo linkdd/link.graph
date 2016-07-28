@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from .backward import NodeBackward, RelationBackward
-from .forward import NodeForward, RelationForward
+from .backward import NodeBreadthBackward, RelationBackward
+from .forward import NodeBreadthForward, RelationForward
 from .filter import WalkFilter, CRUDFilter
 from .follow import Follow
 
@@ -12,9 +12,9 @@ from .link import Link
 __all__ = [
     'WalkFilter',
     'CRUDFilter',
-    'NodeForward',
+    'NodeBreadthForward',
     'RelationForward',
-    'NodeBackward',
+    'NodeBreadthBackward',
     'RelationBackward',
     'Follow',
     'Update',

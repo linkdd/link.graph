@@ -3,9 +3,9 @@
 from link.graph.algorithms.base import Algorithm
 
 
-class NodeForward(Algorithm):
+class NodeBreadthForward(Algorithm):
     def __init__(self, graphmgr, filter_algo, *args, **kwargs):
-        super(NodeForward, self).__init__(graphmgr, *args, **kwargs)
+        super(NodeBreadthForward, self).__init__(graphmgr, *args, **kwargs)
 
         self.filter_algo = filter_algo
 

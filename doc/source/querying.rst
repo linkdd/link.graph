@@ -12,7 +12,7 @@ Walk through
 The first statement of the walk-through is used to selects elements from the graph,
 creating a sub-graph:
 
-.. code-block::
+.. code-block:: text
 
    FROM <element filter>
 
@@ -21,7 +21,7 @@ selected by the previous statement.
 
 It can be followed by a ``FOLLOW`` statement used to reduce the walked elements:
 
-.. code-block::
+.. code-block:: text
 
    FROM
        <element filter>
@@ -44,7 +44,7 @@ A filter is composed of:
  - a list of conditions
  - an optional alias
 
-.. code-block::
+.. code-block:: text
 
    <filter type> (<element types>) { <conditions> } [ AS <alias> ]
 
@@ -55,7 +55,7 @@ There is two type of filters:
 
 A condition is used to filter elements according to their properties:
 
-.. code-block::
+.. code-block:: text
 
    RELS(r1, r2, r3) { weight > 2, weight < 10 } AS rels0
    NODES(n1, n2, n3) { foo = "bar" } AS nodes0
@@ -76,7 +76,7 @@ Read operations
 A ``SELECT`` statement expects a list of alias to be returned, and optionally a
 filter for each alias:
 
-.. code-block::
+.. code-block:: text
 
    SELECT
        alias1
@@ -85,7 +85,7 @@ filter for each alias:
 
 Here, a filter is a condition on properties from aliased elements, example:
 
-.. code-block::
+.. code-block:: text
 
    alias1 { foo > 2 AND foo < 5 OR foo = 8 }
 
@@ -98,7 +98,7 @@ be aliased for further use:
  - node definition
  - relationship definition, which expects a set of source nodes and a set of target nodes
 
-.. code-block::
+.. code-block:: text
 
    INSERT
        NODE(<new node types>) { <new node assignations> } AS alias0
@@ -113,7 +113,7 @@ be aliased for further use:
 
 For example:
 
-.. code-block::
+.. code-block:: text
 
    INSERT
        NODE(n2) {
@@ -133,13 +133,13 @@ Update operations
 
 An ``UPDATE`` statement expects a set of new assignations on aliased properties:
 
-.. code-block::
+.. code-block:: text
 
    UPDATE ( <assignations> )
 
 For example:
 
-.. code-block::
+.. code-block:: text
 
    UPDATE (
        SET alias2.weight 17
@@ -153,7 +153,7 @@ Delete operations
 
 A ``DELETE`` statement have exactly the same syntax as a ``SELECT`` statement:
 
-.. code-block::
+.. code-block:: text
 
    DELETE
        alias1

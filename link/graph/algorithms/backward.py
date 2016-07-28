@@ -4,9 +4,9 @@ from link.graph.algorithms.base import Algorithm
 from link.feature import getfeature
 
 
-class NodeBackward(Algorithm):
+class NodeBreadthBackward(Algorithm):
     def __init__(self, graphmgr, filter_algo, *args, **kwargs):
-        super(NodeBackward, self).__init__(graphmgr, *args, **kwargs)
+        super(NodeBreadthBackward, self).__init__(graphmgr, *args, **kwargs)
 
         self.filter_algo = filter_algo
 
