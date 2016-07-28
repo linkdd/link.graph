@@ -1,11 +1,11 @@
-Welcome to link.graph's documentation!
-======================================
+link.graph
+==========
 
 **link.graph** is a pure-python graph database.
 
-Check out the source code on Github_.
+See documentation_ for more informations.
 
-.. _Github: https://github.com/linkdd/link.graph
+.. _documentation: https://linkgraph.readthedocs.io
 .. _KVStore: https://github.com/linkdd/link.kvstore
 .. _Fulltext: https://github.com/linkdd/link.fulltext
 
@@ -66,13 +66,3 @@ Features
  - API is fully implemented with Map/Reduce algorithms (see `link.parallel <https://github.com/linkdd/link.parallel>`_)
  - storage backend is based on KVStore_ and Fulltext_
  - command line interface
-
-Contents
---------
-
-.. toctree::
-   :maxdepth: 2
-
-   cli
-   querying
-   api/modules

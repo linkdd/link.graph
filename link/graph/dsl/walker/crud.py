@@ -158,7 +158,7 @@ class CRUDOperations(object):
             elif aliasedset['type'] == 'relationship':
                 store = self.graphmgr.relationships_store
 
-            f = getfeature(, 'model')
+            f = getfeature(store, 'model')
             Model = f(aliasedset['type'])
 
             for obj in aliasedset['dataset']:
