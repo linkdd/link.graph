@@ -3,7 +3,7 @@
 from link.graph.dsl.walker.filter import CRUDFilterWalker
 from link.graph.algorithms.filter import CRUDFilter
 from link.graph.algorithms.update import Update
-from link.graph.algorithms.link import Link
+from link.graph.algorithms.insert import Link
 from link.feature import getfeature
 
 
