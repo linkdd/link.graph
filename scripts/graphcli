@@ -2,8 +2,19 @@
 # -*- coding: utf-8 -*-
 
 from link.graph.cli.core import GraphCLI
+from argparse import ArgumentParser
 
 
 if __name__ == '__main__':
-    cli = GraphCLI()
+    parser = ArgumentParser(description='Graph Command Line Interface')
+    parser.add_argument(
+        '-U',
+        nargs=1,
+        default='graph://',
+        help='Graph Middleware URL'
+    )
+
+    args = parser.parse_args()
+
+    cli = GraphCLI(args.U)
     cli()

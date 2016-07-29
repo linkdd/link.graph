@@ -5,10 +5,13 @@ from b3j0f.conf import Configurable, category, Parameter
 from link.graph.dsl.generator import single_parser_per_scope
 from link.graph.dsl.walker.core import GraphDSLNodeWalker
 
-from link.middleware.core import Middleware
+from link.middleware.core import Middleware, register_middleware
+from link.parallel.core import MapReduceMiddleware
+from link.kvstore.core import KeyValueStore
 from link.graph import CONF_BASE_PATH
 
 from grako.model import ModelBuilderSemantics
+import os
 
 
 @Configurable(
@@ -17,19 +20,19 @@ from grako.model import ModelBuilderSemantics
         'GRAPHMANAGER',
         Parameter(
             name='parallel_backend',
-            parser=Middleware.get_middleware_by_uri
+            parser=MapReduceMiddleware.get_middleware_by_uri
         ),
         Parameter(
             name='nodes_store',
-            parser=Middleware.get_middleware_by_uri
+            parser=KeyValueStore.get_middleware_by_uri
         ),
         Parameter(
             name='relationships_store',
-            parser=Middleware.get_middleware_by_uri
+            parser=KeyValueStore.get_middleware_by_uri
         ),
         Parameter(
             name='graphs_store',
-            parser=Middleware.get_middleware_by_uri
+            parser=KeyValueStore.get_middleware_by_uri
         )
     )
 )
@@ -51,3 +54,24 @@ class GraphManager(object):
     def __call__(self, request):
         model = self.parser.parse(request, rule_name='start')
         return self.walker.walk(model)
+
+
+@register_middleware
+class GraphMiddleware(Middleware):
+
+    __protocols__ = ['graph']
+
+    def __init__(self, *args, **kwargs):
+        super(GraphMiddleware, self).__init__(*args, **kwargs)
+
+        if self.path:
+            cfg = Configurable(paths=os.path.join(self.path))
+            graphcls = cfg(GraphManager)
+
+        else:
+            graphcls = GraphManager
+
+        self._graph = graphcls()
+
+    def __call__(self, request):
+        return self._graph(request)

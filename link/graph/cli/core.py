@@ -6,7 +6,7 @@ from link.graph.cli.history import HistoryManager
 from link.graph.cli.completion.core import GraphCompleter
 from link.graph.cli import CONF_PATH, CATEGORY
 from link.graph.dsl.lexer import GraphDSLLexer
-from link.graph.core import GraphManager
+from link.graph.core import GraphMiddleware
 from link.graph import __version__
 
 from prompt_toolkit.key_binding.manager import KeyBindingManager
@@ -29,10 +29,10 @@ from six import print_
     )
 )
 class GraphCLI(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, graphuri, *args, **kwargs):
         super(GraphCLI, self).__init__(*args, **kwargs)
 
-        self.graph = GraphManager()
+        self.graph = GraphMiddleware.get_middleware_by_uri(graphuri)
         self.kbmgr = KeyBindingManager.for_prompt()
         self.histmgr = HistoryManager()
         self.completer = GraphCompleter()

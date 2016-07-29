@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from link.graph.algorithms.forward import NodeBreadthBackward
+from link.graph.algorithms.backward import NodeBreadthBackward
+from link.graph.algorithms.backward import NodeDepthBackward
 from link.graph.algorithms.forward import NodeBreadthForward
+from link.graph.algorithms.forward import NodeDepthForward
 from link.graph.algorithms.filter import WalkFilter
 from link.graph.algorithms.base import Algorithm
 
@@ -40,7 +42,7 @@ class Follow(Algorithm):
 
         return methods[key](values)
 
-    def walk_nodes(self, dataset, algo):
+    def walk_nodes_breadth(self, dataset, algo):
         start, stop = self['cardinality'].begin, self['cardinality'].end
         result = []
 
@@ -59,16 +61,36 @@ class Follow(Algorithm):
 
         if self['direction'] in ['FORWARD', 'BOTH']:
             algo = NodeBreadthForward(self.graphmgr, filter_algo)
-            result += self.walk_nodes(dataset, algo)
+            result += self.walk_nodes_breadth(dataset, algo)
 
         if self['direction'] in ['BACKWARD', 'BOTH']:
             algo = NodeBreadthBackward(self.graphmgr, filter_algo)
-            result += self.walk_nodes(dataset, algo)
+            result += self.walk_nodes_breadth(dataset, algo)
 
         return result
 
     def reduce_node_depth(self, dataset):
-        return []
+        result = []
+
+        filter_algo = WalkFilter(self.graphmgr, self['filter'].query)
+
+        if self['direction'] in ['FORWARD', 'BOTH']:
+            algo = NodeDepthForward(
+                self.graphmgr,
+                filter_algo,
+                self['cardinality']
+            )
+            result += self.graphmgr.call_algorithm(dataset, algo)
+
+        if self['direction'] in ['BACKWARD', 'BOTH']:
+            algo = NodeDepthBackward(
+                self.graphmgr,
+                filter_algo,
+                self['cardinality']
+            )
+            result += self.graphmgr.call_algorithm(dataset, algo)
+
+        return result
 
     def reduce_relations_breadth(self, dataset):
         return []

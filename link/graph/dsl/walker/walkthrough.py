@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from link.graph.algorithms import WalkFilter, Follow
+from link.graph.algorithms.filter import WalkFilter
+from link.graph.algorithms.follow import Follow
 from link.feature import getfeature
 
 
