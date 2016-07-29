@@ -173,6 +173,8 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         node.statements = list(reversed(node.statements))
 
     def walk_RequestNode(self, node, children_retval):
+        return node
+
         if node.walkthrough is not None:
             node.walkthrough = node.walkthrough.statements
 

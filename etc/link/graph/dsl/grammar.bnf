@@ -49,35 +49,31 @@ condition::ConditionNode = propname:identifier op:condop value:value ;
 type_list::TypeListNode = "(" values:(",".{ type }) ")" ;
 (*/Type list *)
 
-(* Property filter *)
-prop_filter::PropertyFilterNode = "{" conditions:(",".{ condition }) "}" ;
-(*/Property filter *)
+(* Filter *)
+termfilter::TermFilterNode = propname:identifier op:condop value:value ;
+andfilter::AndFilterNode = left:(filter | termfilter) "AND" right:(termfilter | filter) ;
+orfilter::OrFilterNode = left:(filter | termfilter) "OR" right:(termfilter | filter) ;
+search::SearchNode = value:(andfilter | orfilter | termfilter) ;
+innerfilter::InnerFilterNode = search:search ;
 
-(* Walk filter *)
-relation_filter::RelationFilterNode = "RELS" types:type_list properties:prop_filter ;
-node_filter::NodeFilterNode = "NODES" types:type_list properties:prop_filter ;
-walkfilter::WalkFilterNode = (typed:relation_filter | typed:node_filter) [ "AS" alias:alias ] ;
-(*/Walk filter *)
+filter::FilterNode = "{" filter:innerfilter "}" ;
+type_filter::TypedFilterNode = [ types:type_list ] filter:filter ;
+(*/Filter *)
 
-(* FOLLOW *)
-follow_type::FollowTypeNode = value:("DEPTH" | "BREADTH") ;
+(* WALK *)
+
+from::FromNode = "FROM" set:alias [ filter:type_filter ] [ "AS" alias:alias ] ;
+
+walk_type::FollowTypeNode = value:("DEPTH" | "BREADTH") ;
 direction::DirectionNode = value:("BACKWARD" | "FORWARD" | "BOTH") ;
-cardinality::CardinalityNode = begin:natural ".." end:natural ;
-follow::FollowNode = "FOLLOW" type:follow_type direction:direction cardinality:cardinality [ filter:walkfilter ] ;
-(*/FOLLOW *)
+walkmode::WalkModeNode = [ type:walk_type ] [ direction:direction ] [ begin:natural ] [ end:(natural | "*") ] ;
+through::ThroughNode = "THROUGH" set:alias [ filter:type_filter ] [ "AS" alias:alias ] [ wmode:walkmode ] ;
+to::ToNode = "TO" [ filter:type_filter ] alias:alias ;
 
-(* FROM *)
-walkstmt::WalkStatementNode = "FROM" filter:walkfilter [ follow:{ follow }+ ] ;
-(*/FROM *)
+path::PathNode = through:{ through }+ to:{ to }+ ;
+walkstmt::WalkStatementNode = froms:{ from }+ path:{ path }+ ;
 
-(* Request filter *)
-termreqfilter::TermRequestFilterNode = propname:identifier op:condop value:value ;
-andreqfilter::AndRequestFilterNode = left:(reqfilter | termreqfilter) "AND" right:(termreqfilter | reqfilter) ;
-orreqfilter::OrRequestFilterNode = left:(reqfilter | termreqfilter) "OR" right:(termreqfilter | reqfilter) ;
-search::SearchNode = value:(andreqfilter | orreqfilter | termreqfilter) ;
-reqfilter::RequestFilterNode = search:search ;
-aliasedfilter::AliasedFilterNode = alias:alias [ "{" filter:reqfilter "}" ] ;
-(*/Request filter *)
+(*/WALK *)
 
 (* CREATE *)
 assignset::AssignSetNode = "SET" propname:identifier value:value ;
@@ -88,14 +84,14 @@ eltprops::ElementPropertiesNode = "{" assignations:(",".{ assign }) "}" ;
 
 node_type::NodeTypeNode = "NODE" types:type_list properties:eltprops [ "AS" alias:alias ] ;
 
-links::LinksNode = "FROM" source:(alias | node_filter) "TO" target:(alias | node_filter) ;
+links::LinksNode = "SOURCE" source:(alias | type_filter) "TARGET" target:(alias | type_filter) ;
 relation_type::RelationTypeNode = "REL" types:type_list properties:eltprops [ "AS" alias:alias ] links:links ;
 
 createstmt::CreateStatementNode = "INSERT" (typed:node_type | typed:relation_type) ;
 (*/CREATE *)
 
 (* READ *)
-readstmt::ReadStatementNode = "SELECT" filters:{ aliasedfilter }+ ;
+readstmt::ReadStatementNode = "SELECT" aliases:{ alias }+ ;
 (*/READ *)
 
 (* UPDATE *)
@@ -108,16 +104,14 @@ updatestmt::UpdateStatementNode = "UPDATE" "(" updates:{ updateprop }+ ")" ;
 (*/UPDATE *)
 
 (* DELETE *)
-deletestmt::DeleteStatementNode = "DELETE" filters:{ aliasedfilter }+ ;
+deletestmt::DeleteStatementNode = "DELETE" aliases:{ alias }+ ;
 (*/DELETE *)
 
 (* Request *)
-walkthrough::WalkthroughBlock = statements:{ walkstmt }+ ;
-
 crudstmt::CRUDStatementNode = statement:(createstmt | readstmt | updatestmt | deletestmt) ;
 crud::CRUDBlock = statements:{ crudstmt }+ ;
 
-request::RequestNode = [ walkthrough:walkthrough ] crud:crud ;
+request::RequestNode = [ walkthrough:walkstmt ] crud:crud ;
 (*/Request *)
 
 start = request ;

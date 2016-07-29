@@ -29,10 +29,6 @@ import os
         Parameter(
             name='relationships_store',
             parser=KeyValueStore.get_middleware_by_uri
-        ),
-        Parameter(
-            name='graphs_store',
-            parser=KeyValueStore.get_middleware_by_uri
         )
     )
 )
