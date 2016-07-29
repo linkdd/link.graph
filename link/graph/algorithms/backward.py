@@ -21,7 +21,7 @@ class NodeBreadthBackward(Algorithm):
         return self.graphmgr.call_algorithm(nodes, self.filter_algo)
 
 
-class NodeDepthForward(Algorithm):
+class NodeDepthBackward(Algorithm):
     def __init__(
         self,
         graphmgr,
@@ -30,7 +30,7 @@ class NodeDepthForward(Algorithm):
         iteration=0,
         *args, **kwargs
     ):
-        super(NodeDepthForward, self).__init__(graphmgr, *args, **kwargs)
+        super(NodeDepthBackward, self).__init__(graphmgr, *args, **kwargs)
 
         self.filter_algo = filter_algo
         self.start = cardinality.begin
