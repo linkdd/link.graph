@@ -1,13 +1,11 @@
 (* keyword definition *)
 
 @@keyword :: TRUE FALSE
-@@keyword :: RELS NODES
 @@keyword :: DEPTH BREADTH
 @@keyword :: BACKWARD FORWARD BOTH
-@@keyword :: FOLLOW
-@@keyword :: FROM TO
+@@keyword :: FROM THROUGH TO
+@@keyword :: SOURCE TARGET
 @@keyword :: NODE REL
-@@keyword :: WHERE AND OR
 @@keyword :: AS
 @@keyword :: SET UNSET ADDTOSET DELFROMSET
 @@keyword :: INSERT SELECT UPDATE DELETE
@@ -16,15 +14,14 @@
 
 (* symbols definition *)
 
-digit = /[0-9]/ ;
-symbol = /[a-zA-Z]/ ;
+digits = /[0-9]+/ ;
 characters = /\w*/ ;
 
 (*/symbols definition *)
 
 (* basic type definitions *)
 string::StringNode = '"' value:characters '"' | "'" value:characters "'" ;
-natural::NaturalNode = value:({ digit }+) ;
+natural::NaturalNode = value:digits ;
 sign = "+" | "-" ;
 integer::IntegerNode = value:([ sign:sign ] int:natural) ;
 decimal::DecimalNode = value:([ sign:sign ] int:natural "." dec:natural) ;
@@ -46,7 +43,7 @@ condition::ConditionNode = propname:identifier op:condop value:value ;
 (*/basic definitions *)
 
 (* Type list *)
-type_list::TypeListNode = "(" values:(",".{ type }) ")" ;
+type_list::TypeListNode = "(" values:{ type }* ")" ;
 (*/Type list *)
 
 (* Filter *)
@@ -56,13 +53,13 @@ orfilter::OrFilterNode = left:(filter | termfilter) "OR" right:(termfilter | fil
 search::SearchNode = value:(andfilter | orfilter | termfilter) ;
 innerfilter::InnerFilterNode = search:search ;
 
-filter::FilterNode = "{" filter:innerfilter "}" ;
+filter::FilterNode = "{" [ filter:innerfilter ] "}" ;
 type_filter::TypedFilterNode = [ types:type_list ] filter:filter ;
 (*/Filter *)
 
 (* WALK *)
 
-from::FromNode = "FROM" set:alias [ filter:type_filter ] [ "AS" alias:alias ] ;
+from::FromNode = "FROM" set:alias filter:type_filter [ "AS" alias:alias ] ;
 
 walk_type::FollowTypeNode = value:("DEPTH" | "BREADTH") ;
 direction::DirectionNode = value:("BACKWARD" | "FORWARD" | "BOTH") ;
@@ -70,7 +67,7 @@ walkmode::WalkModeNode = [ type:walk_type ] [ direction:direction ] [ begin:natu
 through::ThroughNode = "THROUGH" set:alias [ filter:type_filter ] [ "AS" alias:alias ] [ wmode:walkmode ] ;
 to::ToNode = "TO" [ filter:type_filter ] alias:alias ;
 
-path::PathNode = through:{ through }+ to:{ to }+ ;
+path::PathNode = through:{ through }+ to:to ;
 walkstmt::WalkStatementNode = froms:{ from }+ path:{ path }+ ;
 
 (*/WALK *)
@@ -80,7 +77,7 @@ assignset::AssignSetNode = "SET" propname:identifier value:value ;
 assignaddtoset::AssignAddNode = "ADDTOSET" propname:identifier value:value ;
 assign::AssignNode = value:(assignset | assignaddtoset) ;
 
-eltprops::ElementPropertiesNode = "{" assignations:(",".{ assign }) "}" ;
+eltprops::ElementPropertiesNode = "{" assignations:{ assign }* "}" ;
 
 node_type::NodeTypeNode = "NODE" types:type_list properties:eltprops [ "AS" alias:alias ] ;
 
@@ -91,7 +88,7 @@ createstmt::CreateStatementNode = "INSERT" (typed:node_type | typed:relation_typ
 (*/CREATE *)
 
 (* READ *)
-readstmt::ReadStatementNode = "SELECT" aliases:{ alias }+ ;
+readstmt::ReadStatementNode = "SELECT" aliases:",".{ alias } ;
 (*/READ *)
 
 (* UPDATE *)
@@ -104,14 +101,14 @@ updatestmt::UpdateStatementNode = "UPDATE" "(" updates:{ updateprop }+ ")" ;
 (*/UPDATE *)
 
 (* DELETE *)
-deletestmt::DeleteStatementNode = "DELETE" aliases:{ alias }+ ;
+deletestmt::DeleteStatementNode = "DELETE" aliases:",".{ alias } ;
 (*/DELETE *)
 
 (* Request *)
 crudstmt::CRUDStatementNode = statement:(createstmt | readstmt | updatestmt | deletestmt) ;
 crud::CRUDBlock = statements:{ crudstmt }+ ;
 
-request::RequestNode = [ walkthrough:walkstmt ] crud:crud ;
+request::RequestNode = walkthrough:walkstmt crud:crud ;
 (*/Request *)
 
 start = request ;

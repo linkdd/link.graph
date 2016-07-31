@@ -3,7 +3,6 @@
 from b3j0f.conf import Configurable, category, Parameter
 
 from link.graph.cli.history import HistoryManager
-from link.graph.cli.completion.core import GraphCompleter
 from link.graph.cli import CONF_PATH, CATEGORY
 from link.graph.dsl.lexer import GraphDSLLexer
 from link.graph.core import GraphMiddleware
@@ -25,7 +24,8 @@ from six import print_
     paths=CONF_PATH,
     conf=category(
         CATEGORY,
-        Parameter(name='color_scheme', svalue='default')
+        Parameter(name='color_scheme', svalue='default'),
+        Parameter(name='tab_width', ptype=int, svalue='4')
     )
 )
 class GraphCLI(object):
@@ -35,14 +35,13 @@ class GraphCLI(object):
         self.graph = GraphMiddleware.get_middleware_by_uri(graphuri)
         self.kbmgr = KeyBindingManager.for_prompt()
         self.histmgr = HistoryManager()
-        self.completer = GraphCompleter()
 
         self.register_shortcuts()
 
     def register_shortcuts(self):
         self.kbmgr.registry.add_binding(Keys.ControlJ)(self.newline_or_execute)
         self.kbmgr.registry.add_binding(Keys.ControlC)(self.cancel_input)
-        #self.kbmgr.registry.add_binding(Keys.ControlI)(self.tab_or_complete)
+        self.kbmgr.registry.add_binding(Keys.ControlI)(self.tab_or_complete)
 
     def newline_or_execute(self, event):
         buf = event.current_buffer
@@ -77,7 +76,14 @@ class GraphCLI(object):
             buf.reset()
 
     def tab_or_complete(self, event):
-        pass
+        buf = event.current_buffer
+
+        if not buf.complete_state:
+            doc = buf.document
+            col = doc.cursor_position_col
+            nbspaces = ((col // self.tab_width) + 1) * self.tab_width
+
+            buf.insert_text(' ' * nbspaces)
 
     def get_title(self):
         return 'GraphCLI v{0}'.format(__version__)
@@ -103,7 +109,6 @@ class GraphCLI(object):
                         get_style_by_name(self.color_scheme),
                         {}
                     ),
-                    completer=self.completer,
                     history=self.histmgr.history,
                     enable_history_search=True,
                 )

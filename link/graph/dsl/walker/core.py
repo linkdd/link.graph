@@ -39,20 +39,11 @@ class GraphDSLNodeWalker(DepthFirstWalker):
     def walk_ValueNode(self, node, children_retval):
         node.value = self.semantics.parse_ValueNode(node)
 
-    def walk_CardinalityNode(self, node, children_retval):
-        node.begin = node.begin.value
-        node.end = node.end.value
-
     def walk_AliasNode(self, node, children_retval):
         node.name = node.name.name
 
     def walk_TypeNode(self, node, children_retval):
         node.name = node.name.name
-
-    def walk_ConditionNode(self, node, children_retval):
-        node.op = node.op.value
-        node.propname = node.propname.name
-        node.value = node.value.value
 
     def walk_AssignSetNode(self, node, children_retval):
         node.propname = node.propname.name
@@ -81,31 +72,46 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         node.propname = node.propname.name
         node.value = node.value.value
 
-    def walk_WalkFilterNode(self, node, children_retval):
-        if node.alias is not None:
-            node.alias = node.alias.name
+    def walk_TermFilterNode(self, node, children_retval):
+        node.op = node.op.value
+        node.propname = node.propname.name
+        node.value = node.value.value
 
-    def walk_NodeFilterNode(self, node, children_retval):
-        node.properties = node.properties.conditions
-        node.types = node.types.values_
+        node.query = self.semantics.parse_TermFilterNode(node)
 
-        node.query = self.semantics.parse_query(node)
+        del node.op
+        del node.propname
+        del node.value
 
-        del node.properties
+    def walk_AndFilterNode(self, node, children_retval):
+        node.query = self.semantics.parse_AndFilterNode(node)
+
+        del node.left
+        del node.right
+
+    def walk_OrFilterNode(self, node, children_retval):
+        node.query = self.semantics.parse_OrFilterNode(node)
+
+        del node.left
+        del node.right
+
+    def walk_InnerFilterNode(self, node, children_retval):
+        node.query = node.search.value.query
+        del node.search
+
+    def walk_TypedFilterNode(self, node, children_retval):
+        node.types = [t.name for t in node.types.values_]
+
+        if node.filter.filter is not None:
+            node.filter = node.filter.filter.query
+
+        else:
+            node.filter = None
+
+        node.query = self.semantics.parse_TypedFilterNode(node)
+
         del node.types
-
-    def walk_RelationFilterNode(self, node, children_retval):
-        node.properties = node.properties.conditions
-        node.types = node.types.values_
-
-        node.query = self.semantics.parse_query(node)
-
-        del node.properties
-        del node.types
-
-    def walk_FollowNode(self, node, children_retval):
-        node.type = node.type.value
-        node.direction = node.direction.value
+        del node.filter
 
     def walk_NodeTypeNode(self, node, children_retval):
         if node.alias is not None:
@@ -121,19 +127,41 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         node.types = [t.name for t in node.types.values_]
         node.properties = node.properties.assignations
 
-    def walk_TermRequestFilterNode(self, node, children_retval):
-        node.op = node.op.value
-        node.propname = node.propname.name
-        node.value = node.value.value
+    def walk_FromNode(self, node, children_retval):
+        node.set_ = node.set_.name
 
-    def walk_RequestFilterNode(self, node, children_retval):
-        node.search = node.search.value
+        if node.alias is not None:
+            node.alias = node.alias.name
 
-    def walk_AliasedFilterNode(self, node, children_retval):
+        node.filter = node.filter.query
+
+    def walk_WalkModeNode(self, node, children_retval):
+        if node.type is not None:
+            node.type = node.type.value
+
+        if node.direction is not None:
+            node.direction = node.direction.value
+
+        if node.begin is not None:
+            node.begin = node.begin.value
+
+        if node.end is not None:
+            node.end = node.end.value
+
+    def walk_ThroughNode(self, node, children_retval):
+        node.set_ = node.set_.name
+
+        if node.alias is not None:
+            node.alias = node.alias.name
+
+        if node.filter is not None:
+            node.filter = node.filter.query
+
+    def walk_ToNode(self, node, children_retval):
         node.alias = node.alias.name
 
         if node.filter is not None:
-            node.filter = node.filter.search
+            node.filter = node.filter.query
 
     def walk_CreateStatementNode(self, node, children_retval):
         node.typed.properties = [
@@ -142,15 +170,7 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         ]
 
     def walk_ReadStatementNode(self, node, children_retval):
-        filters = {}
-
-        for nodefilter in node.filters:
-            l = filters.setdefault(nodefilter.alias, [])
-
-            if nodefilter.filter is not None:
-                l.append(nodefilter.filter)
-
-        node.filters = filters
+        node.aliases = [a.name for a in node.aliases]
 
     def walk_UpdateStatementNode(self, node, children_retval):
         node.updates = [
@@ -159,28 +179,12 @@ class GraphDSLNodeWalker(DepthFirstWalker):
         ]
 
     def walk_DeleteStatementNode(self, node, children_retval):
-        filters = {}
+        node.aliases = [a.name for a in node.aliases]
 
-        for nodefilter in node.filters:
-            l = filters.setdefault(nodefilter.alias, [])
-
-            if nodefilter.filter is not None:
-                l.append(nodefilter.filter)
-
-        node.filters = filters
-
-    def walk_WalkthroughBlock(self, node, children_retval):
-        node.statements = list(reversed(node.statements))
+    def walk_CRUDBlock(self, node, children_retval):
+        node.statements = [n.statement for n in node.statements]
 
     def walk_RequestNode(self, node, children_retval):
-        return node
-
-        if node.walkthrough is not None:
-            node.walkthrough = node.walkthrough.statements
-
-        else:
-            node.walkthrough = []
-
         node.crud = node.crud.statements
 
         aliased_sets = self.op_walk(node.walkthrough)

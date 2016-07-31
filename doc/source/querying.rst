@@ -9,56 +9,44 @@ A query to the graph is composed of two distinct parts:
 Walk through
 ------------
 
-The first statement of the walk-through is used to selects elements from the graph,
-creating a sub-graph:
+A walk-through is composed of:
+
+ - ``FROM`` statements, used to define sets of nodes
+ - ``THROUGH`` statements, used to walk through aliased relations
+ - ``TO`` statement, used to alias the destination nodes
+
+The first ``FROM`` statement is used to selects elements from the graph, creating
+a sub-graph:
 
 .. code-block:: text
 
-   FROM <element filter>
+   FROM <set> <node filter> [ AS <alias> ]
 
-A second ``FROM`` statements will select another sub-graph, from the sub-graph
-selected by the previous statement.
+   THROUGH <set> <relation filter> [ AS <alias> ] [ <walk mode> ]
 
-It can be followed by a ``FOLLOW`` statement used to reduce the walked elements:
+   TO <node filter> <alias>
 
-.. code-block:: text
-
-   FROM
-       <element filter>
-   FROM
-       <element filter>
-   FOLLOW <DEPTH|BREADTH> <BACKWARD|FORWARD|BOTH> <mindepth>..<maxdepth>
-       <element filter>
-   FROM
-       <element filter>
-   FOLLOW <DEPTH|BREADTH> <BACKWARD|FORWARD|BOTH> <mindepth>..<maxdepth>
-       <element filter>
-
-Element filter
---------------
-
-A filter is composed of:
-
- - a filter type
- - a list of element's types
- - a list of conditions
- - an optional alias
+A second ``FROM`` statements will select another sub-graph, from the alias
+created by the previous statement.
 
 .. code-block:: text
 
-   <filter type> (<element types>) { <conditions> } [ AS <alias> ]
+   FROM NODES () {} AS nodes0
+   FROM nodes0 (n1 n2) { foo = "bar" } AS nodes1
+   FROM nodes1 (n1) { bar = "baz" AND baz = "biz" } AS nodes2
 
-There is two type of filters:
+   THROUGH
+       RELS () {} AS rels0
+       DEPTH BACKWARD 5 10
+   THROUGH
+       rels0 (r1 r2) { weight > 2 } AS rels1
+       BREADTH FORWARD 2 *
+   THROUGH
+       rels1 (r1) {}
 
- - node filters: ``NODES``
- - relationship filters: ``RELS``
-
-A condition is used to filter elements according to their properties:
-
-.. code-block:: text
-
-   RELS(r1, r2, r3) { weight > 2, weight < 10 } AS rels0
-   NODES(n1, n2, n3) { foo = "bar" } AS nodes0
+   TO
+       (n3) {}
+       nodes3
 
 Operations
 ----------
@@ -73,21 +61,11 @@ There is 4 types of operations:
 Read operations
 ~~~~~~~~~~~~~~~
 
-A ``SELECT`` statement expects a list of alias to be returned, and optionally a
-filter for each alias:
+A ``SELECT`` statement expects a list of alias to be returned
 
 .. code-block:: text
 
-   SELECT
-       alias1
-       alias2
-       alias3 { <filter> }
-
-Here, a filter is a condition on properties from aliased elements, example:
-
-.. code-block:: text
-
-   alias1 { foo > 2 AND foo < 5 OR foo = 8 }
+   SELECT alias1, alias2, alias3
 
 Create operations
 ~~~~~~~~~~~~~~~~~
@@ -106,9 +84,9 @@ be aliased for further use:
    INSERT
        REL(<new relationship types) { <new relationship assignations> }
 
-       FROM
+       SOURCE
            <alias or node filter>
-       TO
+       TARGET
            <alias or node filter>
 
 For example:
@@ -123,9 +101,9 @@ For example:
        REL(r3) {
            SET weight 2
        }
-       FROM
-           NODES(n4) { foo = "buzz" }
-       TO
+       SOURCE
+           (n4) { foo = "buzz" }
+       TARGET
            elt18
 
 Update operations
@@ -155,7 +133,4 @@ A ``DELETE`` statement have exactly the same syntax as a ``SELECT`` statement:
 
 .. code-block:: text
 
-   DELETE
-       alias1
-       alias2
-       alias3 { foo > 2 AND foo < 5 OR foo = 8 }
+   DELETE alias1, alias2, alias3

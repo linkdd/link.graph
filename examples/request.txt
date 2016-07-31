@@ -1,37 +1,34 @@
-FROM
-    RELS(r2) { weight > 5 } AS elt2
-FROM
-    NODES(n1, n2) { foo != "bar" } AS elt0
+FROM NODES (n1 n2) { foo = "bar" AND bar = "baz" } AS nodes1
+FROM nodes1 (n2) {} AS nodes2
 
-    FOLLOW DEPTH BACKWARD 5..10
-        RELS(r1, r2) { weight > 2 } AS elt1
+THROUGH
+    RELS (r1) { weight > 2 } AS rel1
+    DEPTH BACKWARD 5 10
+TO
+    () { bar = "baz" }
+    nodes3
 
 INSERT
     NODE(n2) {
         ADDTOSET foo "bar"
-    } AS elt18
+        ADDTOSET foo "biz"
+    } AS newnode
 INSERT
     REL(r3) {
         SET weight 2
     }
-    FROM
-        NODES(n4) { foo = "buzz" }
-    TO
-        elt18
+    SOURCE
+        (n4) { foo = "buzz" }
+    TARGET
+        newnode
 
-SELECT
-    elt0 { bar = "baz" AND baz = "foo"  }
-    elt1
-    elt2 { weight < 17 }
+SELECT nodes1, nodes3, newnode
 
 UPDATE (
-    SET elt2.weight 17
-    ADDTOSET elt0.bar "baz"
-    UNSET elt1.foo
-    DELFROMSET elt0.bar "biz"
+    SET rel1.weight 17
+    ADDTOSET newnode.bar "baz"
+    UNSET nodes1.foo
+    DELFROMSET newnode.bar "biz"
 )
 
-DELETE
-    elt0 { bar = "baz" AND baz = "foo" }
-    elt1
-    elt2 { weight < 17 }
+DELETE nodes2

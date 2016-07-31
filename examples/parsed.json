@@ -1,0 +1,139 @@
+{
+  "__class__": "RequestNode",
+  "crud": [
+    {
+      "__class__": "CreateStatementNode",
+      "typed": {
+        "__class__": "NodeTypeNode",
+        "alias": "newnode",
+        "types": [
+          "n2"
+        ],
+        "properties": [
+          {
+            "__class__": "AssignAddNode",
+            "value": "bar",
+            "propname": "foo"
+          },
+          {
+            "__class__": "AssignAddNode",
+            "value": "biz",
+            "propname": "foo"
+          }
+        ]
+      }
+    },
+    {
+      "__class__": "CreateStatementNode",
+      "typed": {
+        "__class__": "RelationTypeNode",
+        "alias": null,
+        "links": {
+          "__class__": "LinksNode",
+          "target": {
+            "__class__": "AliasNode",
+            "name": "newnode"
+          },
+          "source": {
+            "__class__": "TypedFilterNode",
+            "query": "type_set:(n4) foo:buzz"
+          }
+        },
+        "types": [
+          "r3"
+        ],
+        "properties": [
+          {
+            "__class__": "AssignSetNode",
+            "value": 2,
+            "propname": "weight"
+          }
+        ]
+      }
+    },
+    {
+      "__class__": "ReadStatementNode",
+      "aliases": [
+        "nodes1",
+        "nodes3",
+        "newnode"
+      ]
+    },
+    {
+      "__class__": "UpdateStatementNode",
+      "updates": [
+        {
+          "__class__": "UpdateSetPropertyNode",
+          "value": 17,
+          "alias": "rel1",
+          "propname": "weight"
+        },
+        {
+          "__class__": "UpdateAddPropertyNode",
+          "value": "baz",
+          "alias": "newnode",
+          "propname": "bar"
+        },
+        {
+          "__class__": "UpdateUnsetPropertyNode",
+          "propname": "foo",
+          "alias": "nodes1"
+        },
+        {
+          "__class__": "UpdateDelPropertyNode",
+          "value": "biz",
+          "alias": "newnode",
+          "propname": "bar"
+        }
+      ]
+    },
+    {
+      "__class__": "DeleteStatementNode",
+      "aliases": [
+        "nodes2"
+      ]
+    }
+  ],
+  "walkthrough": {
+    "__class__": "WalkStatementNode",
+    "path": [
+      {
+        "__class__": "PathNode",
+        "through": [
+          {
+            "__class__": "ThroughNode",
+            "set_": "RELS",
+            "alias": "rel1",
+            "filter": "type_set:(r1) weight:[2 TO *]",
+            "wmode": {
+              "__class__": "WalkModeNode",
+              "type": "DEPTH",
+              "end": 10,
+              "begin": 5,
+              "direction": "BACKWARD"
+            }
+          }
+        ],
+        "to": {
+          "__class__": "ToNode",
+          "alias": "nodes3",
+          "filter": "bar:baz"
+        }
+      }
+    ],
+    "froms": [
+      {
+        "__class__": "FromNode",
+        "set_": "NODES",
+        "alias": "nodes1",
+        "filter": "type_set:(n1 OR n2) foo:bar bar:baz"
+      },
+      {
+        "__class__": "FromNode",
+        "set_": "nodes1",
+        "alias": "nodes2",
+        "filter": "type_set:(n2)"
+      }
+    ]
+  }
+}
