@@ -13,7 +13,7 @@ A walk-through is composed of:
 
  - ``FROM`` statements, used to define sets of nodes
  - ``THROUGH`` statements, used to walk through aliased relations
- - ``TO`` statement, used to alias the destination nodes
+ - ``TO`` statements, used to alias the destination nodes
 
 The first ``FROM`` statement is used to selects elements from the graph, creating
 a sub-graph:
@@ -47,6 +47,10 @@ created by the previous statement.
    TO
        (n3) {}
        nodes3
+
+   TO
+       (n4) {}
+       nodes4 
 
 Operations
 ----------

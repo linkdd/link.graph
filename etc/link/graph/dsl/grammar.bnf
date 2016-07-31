@@ -67,7 +67,7 @@ walkmode::WalkModeNode = [ type:walk_type ] [ direction:direction ] [ begin:natu
 through::ThroughNode = "THROUGH" set:alias [ filter:type_filter ] [ "AS" alias:alias ] [ wmode:walkmode ] ;
 to::ToNode = "TO" [ filter:type_filter ] alias:alias ;
 
-path::PathNode = through:{ through }+ to:to ;
+path::PathNode = through:{ through }+ to:{ to }+ ;
 walkstmt::WalkStatementNode = froms:{ from }+ path:{ path }+ ;
 
 (*/WALK *)

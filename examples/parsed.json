@@ -12,13 +12,13 @@
         "properties": [
           {
             "__class__": "AssignAddNode",
-            "value": "bar",
-            "propname": "foo"
+            "propname": "foo",
+            "value": "bar"
           },
           {
             "__class__": "AssignAddNode",
-            "value": "biz",
-            "propname": "foo"
+            "propname": "foo",
+            "value": "biz"
           }
         ]
       }
@@ -30,13 +30,13 @@
         "alias": null,
         "links": {
           "__class__": "LinksNode",
-          "target": {
-            "__class__": "AliasNode",
-            "name": "newnode"
-          },
           "source": {
             "__class__": "TypedFilterNode",
             "query": "type_set:(n4) foo:buzz"
+          },
+          "target": {
+            "__class__": "AliasNode",
+            "name": "newnode"
           }
         },
         "types": [
@@ -45,8 +45,8 @@
         "properties": [
           {
             "__class__": "AssignSetNode",
-            "value": 2,
-            "propname": "weight"
+            "propname": "weight",
+            "value": 2
           }
         ]
       }
@@ -64,15 +64,15 @@
       "updates": [
         {
           "__class__": "UpdateSetPropertyNode",
-          "value": 17,
+          "propname": "weight",
           "alias": "rel1",
-          "propname": "weight"
+          "value": 17
         },
         {
           "__class__": "UpdateAddPropertyNode",
-          "value": "baz",
+          "propname": "bar",
           "alias": "newnode",
-          "propname": "bar"
+          "value": "baz"
         },
         {
           "__class__": "UpdateUnsetPropertyNode",
@@ -81,9 +81,9 @@
         },
         {
           "__class__": "UpdateDelPropertyNode",
-          "value": "biz",
+          "propname": "bar",
           "alias": "newnode",
-          "propname": "bar"
+          "value": "biz"
         }
       ]
     },
@@ -96,6 +96,20 @@
   ],
   "walkthrough": {
     "__class__": "WalkStatementNode",
+    "froms": [
+      {
+        "__class__": "FromNode",
+        "set_": "NODES",
+        "filter": "type_set:(n1 OR n2) foo:bar bar:baz",
+        "alias": "nodes1"
+      },
+      {
+        "__class__": "FromNode",
+        "set_": "nodes1",
+        "filter": "type_set:(n2)",
+        "alias": "nodes2"
+      }
+    ],
     "path": [
       {
         "__class__": "PathNode",
@@ -103,36 +117,24 @@
           {
             "__class__": "ThroughNode",
             "set_": "RELS",
-            "alias": "rel1",
             "filter": "type_set:(r1) weight:[2 TO *]",
             "wmode": {
               "__class__": "WalkModeNode",
               "type": "DEPTH",
-              "end": 10,
               "begin": 5,
-              "direction": "BACKWARD"
-            }
+              "direction": "BACKWARD",
+              "end": 10
+            },
+            "alias": "rel1"
           }
         ],
-        "to": {
-          "__class__": "ToNode",
-          "alias": "nodes3",
-          "filter": "bar:baz"
-        }
-      }
-    ],
-    "froms": [
-      {
-        "__class__": "FromNode",
-        "set_": "NODES",
-        "alias": "nodes1",
-        "filter": "type_set:(n1 OR n2) foo:bar bar:baz"
-      },
-      {
-        "__class__": "FromNode",
-        "set_": "nodes1",
-        "alias": "nodes2",
-        "filter": "type_set:(n2)"
+        "to": [
+          {
+            "__class__": "ToNode",
+            "filter": "bar:baz",
+            "alias": "nodes3"
+          }
+        ]
       }
     ]
   }
