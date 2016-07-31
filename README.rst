@@ -30,7 +30,7 @@ See documentation_ for more informations.
    :alt: Supported Python implementations
 
 .. image:: https://img.shields.io/pypi/wheel/link.graph.svg?style=flat-square
-   :target: https://travis-ci.org/linkdd/link.graph
+   :target: https://pypi.python.org/pypi/link.graph
    :alt: Download format
 
 .. image:: https://travis-ci.org/linkdd/link.graph.svg?branch=master&style=flat-square
@@ -66,3 +66,10 @@ Features
  - API is fully implemented with Map/Reduce algorithms (see `link.parallel <https://github.com/linkdd/link.parallel>`_)
  - storage backend is based on KVStore_ and Fulltext_
  - command line interface
+
+Donating
+--------
+
+.. image:: https://cdn.rawgit.com/gratipay/gratipay-badge/2.3.0/dist/gratipay.svg
+   :target: https://gratipay.com/~linkdd/
+   :alt: Support via Gratipay
