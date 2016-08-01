@@ -44,6 +44,9 @@ class GraphManager(object):
         self.parser = module.GraphDSLParser(semantics=ModelBuilderSemantics())
         self.walker = GraphDSLNodeWalker(self)
 
+    def mapreduce(self, mapper, reducer, dataset):
+        return self.parallel_backend(mapper, reducer, dataset)
+
     def __call__(self, request):
         model = self.parser.parse(request, rule_name='start')
         return self.walker.walk(model)
