@@ -116,6 +116,48 @@ class Walkthrough(object):
 
         return store.search(query)
 
+    def forward_depth_nodes(self, nodes, rel_ids, begin, end, iteration=0):
+        store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
+        Model = getfeature(self.graphmgr.nodes_storage, 'model')
+        Node = Model('node')
+
+        result = []
+
+        if iteration >= begin:
+            result += nodes
+
+        if iteration >= end:
+            return result
+
+        def map_next_nodes(mapper, node):
+            node_ids = [
+                target.split(':')[1]
+                for target in node['targets_set']
+                if target.split(':') in rel_ids
+            ]
+
+            query = '{0}:({1})'.format(
+                Node._DATA_ID,
+                ' OR '.join(node_ids)
+            )
+
+            for next_node in store.search(query):
+                mapper.emit(
+                    'walkthrough-forward-depth-nodes-i{0}'.format(iteration),
+                    next_node
+                )
+
+        def reduce_next_nodes(mapper, key, next_nodes):
+            return self.forward_depth_nodes(
+                next_nodes, rel_ids, begin, end, iteration=iteration + 1
+            )
+
+        return self.graphmgr.mapreduce(
+            map_next_nodes,
+            reduce_next_nodes,
+            nodes
+        )
+
     def backward_breadth_nodes(self, nodes, rel_ids):
         store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
         Model = getfeature(self.graphmgr.nodes_storage, 'model')
@@ -135,6 +177,46 @@ class Walkthrough(object):
         )
 
         return store.search(query)
+
+    def backward_depth_nodes(self, nodes, rel_ids, begin, end, iteration=0):
+        store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
+        Model = getfeature(self.graphmgr.nodes_storage, 'model')
+        Node = Model('node')
+
+        result = []
+
+        if iteration >= begin:
+            result += nodes
+
+        if iteration >= end:
+            return result
+
+        def map_next_nodes(mapper, node):
+            node_id = node[Node._DATA_ID]
+
+            query = 'targets_set:({0})'.format(
+                ' OR '.join([
+                    '"{0}:{1}"'.format(rel_id, node_id)
+                    for rel_id in rel_ids
+                ])
+            )
+
+            for next_node in store.search(query):
+                mapper.emit(
+                    'walkthrough-backward-depth-nodes-i{0}'.format(iteration),
+                    next_node
+                )
+
+        def reduce_next_nodes(mapper, key, next_nodes):
+            return self.backward_depth_nodes(
+                next_nodes, rel_ids, begin, end, iteration=iteration + 1
+            )
+
+        return self.graphmgr.mapreduce(
+            map_next_nodes,
+            reduce_next_nodes,
+            nodes
+        )
 
     def breadth_nodes(self, nodes, rel_ids, begin, end, func):
         result = []
@@ -159,30 +241,47 @@ class Walkthrough(object):
 
         return result
 
+    def depth_nodes(self, nodes, rel_ids, begin, end, func):
+        return func(nodes, rel_ids, begin, end)
+
     def walk_nodes(self, startnodes, rels, walkmode):
         Model = getfeature(self.graphmgr.relationships_storage, 'model')
         Relationship = Model('relationship')
         rel_ids = [r[Relationship._DATA_ID] for r in rels]
 
+        walkmap = {
+            'BREADTH': {
+                'func': self.breadth_nodes,
+                'callbacks': {
+                    'FORWARD': [self.forward_breadth_nodes],
+                    'BACKWARD': [self.backward_breadth_nodes],
+                    'BOTH': [
+                        self.forward_breadth_nodes,
+                        self.backward_breadth_nodes
+                    ]
+                }
+            },
+            'DEPTH': {
+                'func': self.depth_nodes,
+                'callbacks': {
+                    'FORWARD': [self.forward_depth_nodes],
+                    'BACKWARD': [self.backward_depth_nodes],
+                    'BOTH': [
+                        self.forward_depth_nodes,
+                        self.backward_depth_nodes
+                    ]
+                }
+            }
+        }
+
+        walkfunc = walkmap[walkmode.type]['func']
+        callbacks = walkmap[walkmode.type]['callbacks'][walkmode.direction]
+
         result = []
 
-        if walkmode.type == 'BEADTH':
-            if walkmode.direction in ['FORWARD', 'BOTH']:
-                result += self.breadth_nodes(
-                    startnodes, rel_ids,
-                    walkmode.begin, walkmode.end,
-                    self.forward_breadth_nodes
-                )
-
-            if walkmode.direction in ['BACKWARD', 'BOTH']:
-                result += self.breadth_nodes(
-                    startnodes, rel_ids,
-                    walkmode.begin, walkmode.end,
-                    self.backward_breadth_nodes
-                )
-
-        elif walkmode.type == 'DEPTH':
-            raise NotImplementedError()
+        for cb in callbacks:
+            begin, end = walkmode.begin, walkmode.end
+            result += walkfunc(startnodes, rel_ids, begin, end, cb)
 
         return result
 
