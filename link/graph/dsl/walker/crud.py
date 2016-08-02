@@ -153,11 +153,49 @@ class CRUDOperations(object):
             aliased_set = aliased_sets[alias]
 
             if aliased_set['type'] == 'nodes':
-                store = self.graphmgr.nodes_storage
-                ModelFactory = getfeature(store, 'model')
-                Model = ModelFactory('node')
+                def map_deletable_elements(mapper, node):
+                    nodes_storage = self.graphmgr.nodes_storage
+                    store = getfeature(nodes_storage, 'fulltext')
+                    ModelFactory = getfeature(nodes_storage, 'model')
+                    Model = ModelFactory('node')
 
-                # TODO: remove relationships linked to nodes
+                    node_id = node[Model._DATA_ID]
+
+                    mapper.emit('deletable-elements-nodes', node_id)
+
+                    for target in node['targets_set']:
+                        mapper.emit(
+                            'deletable-elements-rels',
+                            target.split(':')[0]
+                        )
+
+                    for prev in store.search(
+                        'targets_set:"*:{0}"'.format(node_id)
+                    ):
+                        for target in prev['targets_set']:
+                            mapper.emit(
+                                'deletable-elements-rels',
+                                target.split(':')[0]
+                            )
+
+                def reduce_deletable_elements(reducer, key, values):
+                    if key == 'deletable-elements-nodes':
+                        nodes_storage = self.graphmgr.nodes_storage
+                        store = getfeature(nodes_storage, 'fulltext')
+
+                        del store[tuple(values)]
+
+                    elif key == 'deletable-elements-rels':
+                        store = self.graphmgr.relationships_storage
+
+                        ids = tuple(set(values))
+                        del store[ids]
+
+                self.graphmgr.mapreduce(
+                    map_deletable_elements,
+                    reduce_deletable_elements,
+                    aliased_set[alias]['dataset']
+                )
 
             elif aliased_sets['type'] == 'relationships':
                 store = self.graphmgr.relationships_storage
@@ -168,7 +206,3 @@ class CRUDOperations(object):
 
             else:
                 continue
-
-            elt_ids = (elt[Model._DATA_ID] for elt in aliased_set['dataset'])
-
-            del store[elt_ids]
