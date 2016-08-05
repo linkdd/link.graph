@@ -99,8 +99,6 @@ class Walkthrough(object):
 
     def forward_breadth_nodes(self, nodes, rel_ids):
         store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
-        Model = getfeature(self.graphmgr.nodes_storage, 'model')
-        Node = Model('node')
 
         node_ids = [
             target.split(':')[1]
@@ -110,7 +108,7 @@ class Walkthrough(object):
         ]
 
         query = '{0}:({1})'.format(
-            Node._DATA_ID,
+            store.DATA_ID,
             ' OR '.join(node_ids)
         )
 
@@ -118,8 +116,6 @@ class Walkthrough(object):
 
     def forward_depth_nodes(self, nodes, rel_ids, begin, end, iteration=0):
         store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
-        Model = getfeature(self.graphmgr.nodes_storage, 'model')
-        Node = Model('node')
 
         result = []
 
@@ -137,7 +133,7 @@ class Walkthrough(object):
             ]
 
             query = '{0}:({1})'.format(
-                Node._DATA_ID,
+                store.DATA_ID,
                 ' OR '.join(node_ids)
             )
 
@@ -160,11 +156,9 @@ class Walkthrough(object):
 
     def backward_breadth_nodes(self, nodes, rel_ids):
         store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
-        Model = getfeature(self.graphmgr.nodes_storage, 'model')
-        Node = Model('node')
 
         node_ids = [
-            node[Node._DATA_ID]
+            node[store.DATA_ID]
             for node in nodes
         ]
 
@@ -180,8 +174,6 @@ class Walkthrough(object):
 
     def backward_depth_nodes(self, nodes, rel_ids, begin, end, iteration=0):
         store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
-        Model = getfeature(self.graphmgr.nodes_storage, 'model')
-        Node = Model('node')
 
         result = []
 
@@ -192,7 +184,7 @@ class Walkthrough(object):
             return result
 
         def map_next_nodes(mapper, node):
-            node_id = node[Node._DATA_ID]
+            node_id = node[store.DATA_ID]
 
             query = 'targets_set:({0})'.format(
                 ' OR '.join([
@@ -245,9 +237,8 @@ class Walkthrough(object):
         return func(nodes, rel_ids, begin, end)
 
     def walk_nodes(self, startnodes, rels, walkmode):
-        Model = getfeature(self.graphmgr.relationships_storage, 'model')
-        Relationship = Model('relationship')
-        rel_ids = [r[Relationship._DATA_ID] for r in rels]
+        store = getfeature(self.graphmgr.relationships_storage, 'fulltext')
+        rel_ids = [r[store.DATA_ID] for r in rels]
 
         walkmap = {
             'BREADTH': {

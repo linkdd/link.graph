@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from link.feature import getfeature
+from link.crdt.map import Map
+
+from copy import deepcopy
+from uuid import uuid4
 
 
 class CRUDOperations(object):
@@ -44,24 +48,28 @@ class CRUDOperations(object):
 
         return sources, targets
 
-    def create_element(self, model, statement, aliased_sets):
-        newelt = Model()
-        newelt.type_set = set(statement.types)
+    def create_element(self, store, statement, aliased_sets):
+        data_id_key = getfeature(store, 'fulltext').DATA_ID
+        data_id_val = None
 
-        assigns = {}
+        newelt = Map()
+        map(newelt['type_set'].add, statement.types)
 
         for assign in statement.properties:
             if assign.__class__.__name == 'AssignAddNode':
-                assigns.setdefault(assign.propname, set()).add(assign.val)
+                newelt[assign.propname].add(assign.val)
 
             elif assign.__class__.__name__ == 'AssignSetNode':
-                assigns[assign.propname] = assign.val
+                if assign.propname == data_id_key:
+                    data_id_val = assign.val
 
-        for propname in assigns:
-            val = assigns[propname]
-            setattr(newelt, propname, val)
+                else:
+                    newelt[assign.propname].assign(assign.val)
 
-        newelt.save()
+        if data_id_val is None:
+            data_id_val = uuid4()
+
+        store[data_id_val] = newelt
 
         if statement.alias is not None:
             if statement.alias not in aliased_sets:
@@ -70,65 +78,63 @@ class CRUDOperations(object):
                     'dataset': []
                 }
 
-            aliased_sets[statement.alias]['dataset'].append(newelt)
+            doc = deepcopy(newelt.current)
+            doc[data_id_key] = data_id_val
 
-        return newelt
+            aliased_sets[statement.alias]['dataset'].append(doc)
+
+        return newelt, data_id_val
 
     def do_NodeTypeNode(self, statement, aliased_sets):
         store = self.graphmgr.nodes_storage
-        Model = getfeature(store, 'model')
-        Node = Model('node')
-
-        self.create_element(Node, statement, aliased_sets)
+        self.create_element(store, statement, aliased_sets)
 
     def do_RelationTypeNode(self, statement, aliased_sets):
         rstore = getfeature(self.graphmgr.relationships_storage, 'fulltext')
-        RModel = getfeature(self.graphmgr.relationships_storage, 'model')
-        Relationship = RModel('relationship')
-
         nstore = getfeature(self.graphmgr.nodes_storage, 'fulltext')
-        NModel = getfeature(self.graphmgr.nodes_storage, 'model')
-        Node = NModel('node')
 
         sources, targets = self.get_links(statement.links, aliased_sets)
 
         for source in sources:
-            newrel = self.create_element(
-                Relationship,
+            newrel, data_id = self.create_element(
+                rstore,
                 statement,
                 aliased_sets
             )
 
-            links = set(
-                '{0}:{1}'.format(
-                    newrel[Relationship._DATA_ID],
-                    target[Node._DATA_ID]
-                )
-                for target in targets
-            )
-
-            source.targets_set = links
-            source.n_targets_counter = len(links)
-            source.n_rels_counter = len(links)
-            source.neighbors_counter = len(targets)
-
-            source.save()
+            source_id = source[nstore.DATA_ID]
+            source = Map(value=source)
 
             for target in targets:
-                target.n_rels_counter = len(links)
-
-                as_target = nstore.search(
-                    'targets_set:"*:{0}"'.format(
-                        target[Node._DATA_ID]
+                source['targets_set'].add(
+                    '{0}:{1}'.format(
+                        newrel[rstore.DATA_ID],
+                        target[nstore.DATA_ID]
                     )
                 )
 
-                increment = target.neighbors_counter
-                increment -= target.n_targets + len(as_target)
-                increment = abs(increment)
+            n = len(targets)
+            source['n_targets_counter'].increment(n)
+            source['n_rels_counter'].increment(n)
+            source['neighbors_counter'].increment(n)
 
-                target.neighbors_counter = increment
-                target.save()
+            self.graphmgr.nodes_storage[source_id] = source
+
+            for target in targets:
+                target_id = target[nstore.DATA_ID]
+                target = Map(value=target)
+
+                target['n_rels_counter'].increment(n)
+
+                as_target = nstore.search(
+                    'targets_set:"*:{0}"'.format(target_id)
+                )
+
+                target['neighbors_counter'].decrement(
+                    abs(len(as_target) + target['n_targets_counter'].current)
+                )
+
+                self.graphmgr.nodes_storage[target_id] = target
 
     def do_CreateStatementNode(self, statement, aliased_sets):
         methodname = 'do_{0}'.format(statement.typed.__class__.__name__)
@@ -156,10 +162,8 @@ class CRUDOperations(object):
                 def map_deletable_elements(mapper, node):
                     nodes_storage = self.graphmgr.nodes_storage
                     store = getfeature(nodes_storage, 'fulltext')
-                    ModelFactory = getfeature(nodes_storage, 'model')
-                    Model = ModelFactory('node')
 
-                    node_id = node[Model._DATA_ID]
+                    node_id = node[store.DATA_ID]
 
                     mapper.emit('deletable-elements-nodes', node_id)
 
@@ -199,8 +203,6 @@ class CRUDOperations(object):
 
             elif aliased_sets['type'] == 'relationships':
                 store = self.graphmgr.relationships_storage
-                ModelFactory = getfeature(store, 'model')
-                Model = ModelFactory('relationship')
 
                 # TODO: remove relationships from targets
 

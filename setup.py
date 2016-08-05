@@ -20,6 +20,7 @@ REQUIREMENTS = [
     'link.fulltext>=0.6',
     'link.parallel>=0.1',
     'link.kvstore>=0.10',
+    'link.crdt>=0.4',
     'prompt-toolkit>=1.0.3',
     'Pygments>=2.1.3',
     'pyxdg>=0.25',
