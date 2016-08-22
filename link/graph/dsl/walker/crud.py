@@ -151,8 +151,122 @@ class CRUDOperations(object):
 
         return result
 
+    def do_UpdateSetPropertyNode(self, statement, aliased_sets):
+        result = {}
+
+        alias = statement.alias
+        key = '{0}_register'.format(statement.propname)
+
+        if aliased_sets[alias]['type'] == 'nodes':
+            store = self.graphmgr.nodes_storage
+
+        elif aliased_sets[alias]['type'] == 'relationships':
+            store = self.graphmgr.relationships_storage
+
+        ids = [
+            elt[store.DATA_ID]
+            for elt in aliased_sets[alias]['dataset']
+        ]
+
+        result[alias] = store[ids]
+
+        for elt in result[alias]:
+            elt[key].assign(statement.value)
+
+        store[ids] = result[alias]
+
+        return result
+
+    def do_UpdateAddPropertyNode(self, statement, aliased_sets):
+        result = {}
+
+        alias = statement.alias
+        key = '{0}_set'.format(statement.propname)
+
+        if aliased_sets[alias]['type'] == 'nodes':
+            store = self.graphmgr.nodes_storage
+
+        elif aliased_sets[alias]['type'] == 'relationships':
+            store = self.graphmgr.relationships_storage
+
+        ids = [
+            elt[store.DATA_ID]
+            for elt in aliased_sets[alias]['dataset']
+        ]
+
+        result[alias] = store[ids]
+
+        for elt in result[alias]:
+            elt[key].add(statement.value)
+
+        store[ids] = result[alias]
+
+        return result
+
+    def do_UpdateUnsetPropertyNode(self, statement, aliased_sets):
+        result = {}
+
+        alias = statement.alias
+        key = '{0}_register'.format(statement.propname)
+
+        if aliased_sets[alias]['type'] == 'nodes':
+            store = self.graphmgr.nodes_storage
+
+        elif aliased_sets[alias]['type'] == 'relationships':
+            store = self.graphmgr.relationships_storage
+
+        ids = [
+            elt[store.DATA_ID]
+            for elt in aliased_sets[alias]['dataset']
+        ]
+
+        result[alias] = store[ids]
+
+        for elt in result[alias]:
+            del elt[key]
+
+        store[ids] = result[alias]
+
+        return result
+
+    def do_UpdateDelPropertyNode(self, statement, aliased_sets):
+        result = {}
+
+        alias = statement.alias
+        key = '{0}_set'.format(statement.propname)
+
+        if aliased_sets[alias]['type'] == 'nodes':
+            store = self.graphmgr.nodes_storage
+
+        elif aliased_sets[alias]['type'] == 'relationships':
+            store = self.graphmgr.relationships_storage
+
+        ids = [
+            elt[store.DATA_ID]
+            for elt in aliased_sets[alias]['dataset']
+        ]
+
+        result[alias] = store[ids]
+
+        for elt in result[alias]:
+            elt[key].discard(statement.value)
+
+        store[ids] = result[alias]
+
+        return result
+
     def do_UpdateStatementNode(self, statement, aliased_sets):
-        raise NotImplementedError()
+        result = {}
+
+        for update in statement.updates:
+            methodname = 'do_{0}'.format(update.__class__.__name__)
+            method = getattr(self, methodname, None)
+
+            if method is not None:
+                local_result = method(update, aliased_sets)
+                result.update(local_result)
+
+        return result
 
     def do_DeleteStatementNode(self, statement, aliased_sets):
         def map_remove_relation_id(mapper, rel_id):
