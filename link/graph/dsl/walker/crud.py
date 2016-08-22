@@ -155,56 +155,97 @@ class CRUDOperations(object):
         raise NotImplementedError()
 
     def do_DeleteStatementNode(self, statement, aliased_sets):
+        def map_remove_relation_id(mapper, rel_id):
+            store = self.graphmgr.nodes_storage
+
+            for node in store.search(
+                'targets_set:"{0}:*"'.format(rel_id)
+            ):
+                mapper.emit('delete-rels-from-nodes', {
+                    'node_id': node,
+                    'relation': rel_id
+                })
+
+        def reduce_remove_relation_id(mapper, items):
+            store = self.graphmgr.nodes_storage
+
+            for item in items:
+                removes = [
+                    target
+                    for target in item['node']['targets_set']
+                    if target.startswith('{0}:'.format(item['relation']))
+                ]
+
+                node_id = item['node'][store.DATA_ID]
+                node = store[node_id]
+
+                for remove in removes:
+                    node['targets_set'].discard(remove)
+
+                store[node_id] = node
+
+        def map_deletable_elements(mapper, node):
+            nodes_storage = self.graphmgr.nodes_storage
+            store = getfeature(nodes_storage, 'fulltext')
+
+            node_id = node[store.DATA_ID]
+
+            mapper.emit('deletable-elements-nodes', node_id)
+
+            for target in node['targets_set']:
+                mapper.emit(
+                    'deletable-elements-rels',
+                    target.split(':')[0]
+                )
+
+            for prev in store.search(
+                'targets_set:"*:{0}"'.format(node_id)
+            ):
+                for target in prev['targets_set']:
+                    mapper.emit(
+                        'deletable-elements-rels',
+                        target.split(':')[0]
+                    )
+
+        def reduce_deletable_elements(reducer, key, values):
+            if key == 'deletable-elements-nodes':
+                store = self.graphmgr.nodes_storage
+
+                del store[tuple(values)]
+
+            elif key == 'deletable-elements-rels':
+                store = self.graphmgr.relationships_storage
+
+                ids = tuple(set(values))
+                del store[ids]
+
+                self.graphmgr.mapreduce(
+                    map_remove_relation_id,
+                    reduce_remove_relation_id,
+                    ids
+                )
+
         for alias in statement.aliases:
             aliased_set = aliased_sets[alias]
 
             if aliased_set['type'] == 'nodes':
-                def map_deletable_elements(mapper, node):
-                    nodes_storage = self.graphmgr.nodes_storage
-                    store = getfeature(nodes_storage, 'fulltext')
-
-                    node_id = node[store.DATA_ID]
-
-                    mapper.emit('deletable-elements-nodes', node_id)
-
-                    for target in node['targets_set']:
-                        mapper.emit(
-                            'deletable-elements-rels',
-                            target.split(':')[0]
-                        )
-
-                    for prev in store.search(
-                        'targets_set:"*:{0}"'.format(node_id)
-                    ):
-                        for target in prev['targets_set']:
-                            mapper.emit(
-                                'deletable-elements-rels',
-                                target.split(':')[0]
-                            )
-
-                def reduce_deletable_elements(reducer, key, values):
-                    if key == 'deletable-elements-nodes':
-                        nodes_storage = self.graphmgr.nodes_storage
-                        store = getfeature(nodes_storage, 'fulltext')
-
-                        del store[tuple(values)]
-
-                    elif key == 'deletable-elements-rels':
-                        store = self.graphmgr.relationships_storage
-
-                        ids = tuple(set(values))
-                        del store[ids]
-
                 self.graphmgr.mapreduce(
                     map_deletable_elements,
                     reduce_deletable_elements,
-                    aliased_set[alias]['dataset']
+                    aliased_set['dataset']
                 )
 
-            elif aliased_sets['type'] == 'relationships':
+            elif aliased_set['type'] == 'relationships':
                 store = self.graphmgr.relationships_storage
 
-                # TODO: remove relationships from targets
+                self.graphmgr.mapreduce(
+                    map_remove_relation_id,
+                    reduce_remove_relation_id,
+                    [
+                        rel[store.DATA_ID]
+                        for rel in aliased_set['dataset']
+                    ]
+                )
 
             else:
                 continue
