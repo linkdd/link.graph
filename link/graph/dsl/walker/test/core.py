@@ -71,6 +71,23 @@ class TestNodeWalker(UTCase):
 
         self.assertEqual(node.value, -42.42)
 
+    def test_walk_IntegerNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.sign = None
+        node.int.value = '42'
+        nw.walk_IntegerNode(node, [])
+
+        self.assertEqual(node.value, 42)
+
+        node = MagicMock()
+        node.sign = '-'
+        node.int.value = '42'
+        nw.walk_IntegerNode(node, [])
+
+        self.assertEqual(node.value, -42)
+
     def test_walk_BooleanNode(self):
         nw = GraphDSLNodeWalker(self.graphmgr)
 

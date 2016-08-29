@@ -13,7 +13,7 @@ class GraphDSLSemantics(object):
             return int('{0}{1}'.format(node.sign, node.int.value))
 
         else:
-            return node.int.value
+            return int(node.int.value)
 
     def parse_DecimalNode(self, node):
         if node.sign is not None:
