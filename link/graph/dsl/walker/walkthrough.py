@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from link.fulltext import FulltextMatch
+from link.fulltext.filter import FulltextMatch
 from link.feature import getfeature
 
 

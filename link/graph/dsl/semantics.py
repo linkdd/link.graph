@@ -36,13 +36,13 @@ class GraphDSLSemantics(object):
         if node.op == '>':
             prop_query = '{0}:[{1} TO *]'.format(
                 node.propname,
-                node.value
+                node.value - 1
             )
 
         elif node.op == '>=':
             prop_query = '{0}:[{1} TO *]'.format(
                 node.propname,
-                node.value - 1
+                node.value
             )
 
         elif node.op == '<':
@@ -51,7 +51,7 @@ class GraphDSLSemantics(object):
                 node.value - 1
             )
 
-        elif node.op == '>=':
+        elif node.op == '<=':
             prop_query = '{0}:[* TO {1}]'.format(
                 node.propname,
                 node.value
