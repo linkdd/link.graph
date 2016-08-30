@@ -75,7 +75,7 @@ class GraphDSLSemantics(object):
         return '{0} {1}'.format(node.left.query, node.right.query)
 
     def parse_OrFilterNode(self, node):
-        return '{0} {1}'.format(node.left.query, node.right.query)
+        return '{0} OR {1}'.format(node.left.query, node.right.query)
 
     def parse_TypedFilterNode(self, node):
         fulltext = ''

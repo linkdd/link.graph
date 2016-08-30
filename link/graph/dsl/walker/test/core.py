@@ -7,11 +7,37 @@ from unittest import main
 from link.graph.dsl.walker.core import GraphDSLNodeWalker
 
 
+def get_mocked_name():
+    for name in ['foo', 'bar', 'baz']:
+        m = MagicMock()
+        m.name = name
+        yield m
+
+
+def get_mocked_value():
+    for val in ['foo', 'bar', 'baz']:
+        m = MagicMock()
+        m.value = val
+        yield m
+
+
+def get_mocked_statements():
+    for stmt in ['foo', 'bar', 'baz']:
+        m = MagicMock()
+        m.statement = stmt
+        yield m
+
+
 class TestNodeWalker(UTCase):
     def setUp(self):
+        self.aliased_sets = {
+            'foo': ['bar', 'baz']
+        }
+        self.result = 'foo'
+
         self.graphmgr = MagicMock()
-        self.op_walk = MagicMock()
-        self.op_crud = MagicMock()
+        self.op_walk = MagicMock(return_value=self.aliased_sets)
+        self.op_crud = MagicMock(return_value=self.result)
 
         patcher1 = patch('link.graph.dsl.walker.core.Walkthrough')
         patcher2 = patch('link.graph.dsl.walker.core.CRUDOperations')
@@ -264,6 +290,278 @@ class TestNodeWalker(UTCase):
         nw.walk_TermFilterNode(node, [])
 
         self.assertEqual(node.query, 'foo:[41 TO *]')
+
+    def test_walk_AndFilterNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.left.query = 'left'
+        node.right.query = 'right'
+
+        nw.walk_AndFilterNode(node, [])
+
+        self.assertEqual(node.query, 'left right')
+
+    def test_walk_OrFilterNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.left.query = 'left'
+        node.right.query = 'right'
+
+        nw.walk_OrFilterNode(node, [])
+
+        self.assertEqual(node.query, 'left OR right')
+
+    def test_walk_InnerFilterNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.search.value.query = 'expected'
+
+        nw.walk_InnerFilterNode(node, [])
+
+        self.assertEqual(node.query, 'expected')
+
+    def test_walk_TypedFilterNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.types.values_ = list(get_mocked_name())
+        node.filter.filter = None
+
+        nw.walk_TypedFilterNode(node, [])
+
+        self.assertEqual(node.query, 'type_set:(foo OR bar OR baz)')
+
+        node = MagicMock()
+        node.types.values_ = list(get_mocked_name())
+        node.filter.filter.query = 'filter'
+
+        nw.walk_TypedFilterNode(node, [])
+
+        self.assertEqual(node.query, 'type_set:(foo OR bar OR baz) filter')
+
+        node = MagicMock()
+        node.types.values_ = []
+        node.filter.filter.query = 'filter'
+
+        nw.walk_TypedFilterNode(node, [])
+
+        self.assertEqual(node.query, 'filter')
+
+    def test_walk_NodeTypeNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.alias.name = 'alias'
+        node.types.values_ = list(get_mocked_name())
+        node.properties.assignations = 'assignations'
+
+        nw.walk_NodeTypeNode(node, [])
+
+        self.assertEqual(node.alias, 'alias')
+        self.assertEqual(node.types, ['foo', 'bar', 'baz'])
+        self.assertEqual(node.properties, 'assignations')
+
+        node = MagicMock()
+        node.alias = None
+        node.types.values_ = list(get_mocked_name())
+        node.properties.assignations = 'assignations'
+
+        nw.walk_NodeTypeNode(node, [])
+
+        self.assertIsNone(node.alias)
+        self.assertEqual(node.types, ['foo', 'bar', 'baz'])
+        self.assertEqual(node.properties, 'assignations')
+
+    def test_walk_RelationTypeNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.alias.name = 'alias'
+        node.types.values_ = list(get_mocked_name())
+        node.properties.assignations = 'assignations'
+
+        nw.walk_RelationTypeNode(node, [])
+
+        self.assertEqual(node.alias, 'alias')
+        self.assertEqual(node.types, ['foo', 'bar', 'baz'])
+        self.assertEqual(node.properties, 'assignations')
+
+        node = MagicMock()
+        node.alias = None
+        node.types.values_ = list(get_mocked_name())
+        node.properties.assignations = 'assignations'
+
+        nw.walk_RelationTypeNode(node, [])
+
+        self.assertIsNone(node.alias)
+        self.assertEqual(node.types, ['foo', 'bar', 'baz'])
+        self.assertEqual(node.properties, 'assignations')
+
+    def test_walk_FromNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.set_.name = 'set'
+        node.alias.name = 'alias'
+        node.filter.query = 'filter'
+
+        nw.walk_FromNode(node, [])
+
+        self.assertEqual(node.set_, 'set')
+        self.assertEqual(node.alias, 'alias')
+        self.assertEqual(node.filter, 'filter')
+
+        node = MagicMock()
+        node.set_.name = 'set'
+        node.alias = None
+        node.filter.query = 'filter'
+
+        nw.walk_FromNode(node, [])
+
+        self.assertEqual(node.set_, 'set')
+        self.assertIsNone(node.alias)
+        self.assertEqual(node.filter, 'filter')
+
+    def test_walk_WalkModeNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.type.value = 'type'
+        node.direction.value = 'dir'
+        node.begin.value = 'begin'
+        node.end.value = 'end'
+
+        nw.walk_WalkModeNode(node, [])
+
+        self.assertEqual(node.type, 'type')
+        self.assertEqual(node.direction, 'dir')
+        self.assertEqual(node.begin, 'begin')
+        self.assertEqual(node.end, 'end')
+
+        node = MagicMock()
+        node.type = None
+        node.direction = None
+        node.begin = None
+        node.end = None
+
+        nw.walk_WalkModeNode(node, [])
+
+        self.assertIsNone(node.type)
+        self.assertIsNone(node.direction)
+        self.assertIsNone(node.begin)
+        self.assertIsNone(node.end)
+
+    def test_walk_ThroughNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.set_.name = 'set'
+        node.alias.name = 'alias'
+        node.filter.query = 'filter'
+
+        nw.walk_ThroughNode(node, [])
+
+        self.assertEqual(node.set_, 'set')
+        self.assertEqual(node.alias, 'alias')
+        self.assertEqual(node.filter, 'filter')
+
+        node = MagicMock()
+        node.set_.name = 'set'
+        node.alias = None
+        node.filter = None
+
+        nw.walk_ThroughNode(node, [])
+
+        self.assertEqual(node.set_, 'set')
+        self.assertIsNone(node.alias)
+        self.assertIsNone(node.filter)
+
+    def test_walk_ToNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.alias.name = 'alias'
+        node.filter.query = 'filter'
+
+        nw.walk_ToNode(node, [])
+
+        self.assertEqual(node.alias, 'alias')
+        self.assertEqual(node.filter, 'filter')
+
+        node = MagicMock()
+        node.alias.name = 'alias'
+        node.filter = None
+
+        nw.walk_ToNode(node, [])
+
+        self.assertEqual(node.alias, 'alias')
+        self.assertIsNone(node.filter)
+
+    def test_walk_CreateStatementNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.typed.properties = list(get_mocked_value())
+
+        nw.walk_CreateStatementNode(node, [])
+
+        self.assertEqual(node.typed.properties, ['foo', 'bar', 'baz'])
+
+    def test_walk_ReadStatementNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.aliases = list(get_mocked_name())
+
+        nw.walk_ReadStatementNode(node, [])
+
+        self.assertEqual(node.aliases, ['foo', 'bar', 'baz'])
+
+    def test_walk_UpdateStatementNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.updates = list(get_mocked_value())
+
+        nw.walk_UpdateStatementNode(node, [])
+
+        self.assertEqual(node.updates, ['foo', 'bar', 'baz'])
+
+    def test_walk_DeleteStatementNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.aliases = list(get_mocked_name())
+
+        nw.walk_DeleteStatementNode(node, [])
+
+        self.assertEqual(node.aliases, ['foo', 'bar', 'baz'])
+
+    def test_walk_CRUDBlock(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.statements = list(get_mocked_statements())
+
+        nw.walk_CRUDBlock(node, [])
+
+        self.assertEqual(node.statements, ['foo', 'bar', 'baz'])
+
+    def test_walk_RequestNode(self):
+        nw = GraphDSLNodeWalker(self.graphmgr)
+
+        node = MagicMock()
+        node.crud.statements = 'crud'
+        node.walkthrough = 'walk'
+
+        result = nw.walk_RequestNode(node, [])
+
+        self.op_walk.assert_called_with('walk')
+        self.op_crud.assert_called_with('crud', self.aliased_sets)
+        self.assertEqual(result, self.result)
 
 
 if __name__ == '__main__':
