@@ -46,7 +46,6 @@ class Walkthrough(object):
 
                     else:
                         rels = self.select_relationships(
-                            nodes,
                             stmt,
                             aliased_sets
                         )
@@ -69,7 +68,7 @@ class Walkthrough(object):
 
         return aliased_sets
 
-    def select_nodes(self, nodes, fromstmt, aliased_sets):
+    def select_nodes(self, fromstmt, aliased_sets):
         if fromstmt.set_ == 'NODES':
             store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
             return store.search(fromstmt.filter)
@@ -83,7 +82,7 @@ class Walkthrough(object):
                 aliased_sets[fromstmt.set_]
             )
 
-    def select_relationships(self, nodes, throughnode, aliased_sets):
+    def select_relationships(self, throughnode, aliased_sets):
         if throughnode.set_ == 'RELS':
             store = getfeature(self.graphmgr.relationships_storage, 'fulltext')
             return store.search(throughnode.filter)
