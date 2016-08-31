@@ -54,6 +54,20 @@ class TestWalkthrough(UTCase):
         return result
 
     def setUp(self):
+        self.graphmgr = MagicMock()
+        self.graphmgr.mapreduce.side_effect = self._mapreduce
+        self.walk = Walkthrough(self.graphmgr)
+
+        patcher = patch('link.graph.dsl.walker.walkthrough.getfeature')
+        self.getfeature = patcher.start()
+        self.getfeature.side_effect = self._getfeature
+        self.addCleanup(patcher.stop)
+
+    def tearDown(self):
+        self.expected_nodes = {}
+        self.expected_rels = {}
+
+    def test_walkthrough(self):
         self.expected_nodes = {
             'fromfilter': [
                 {'_id': 'buzz'}
@@ -77,16 +91,6 @@ class TestWalkthrough(UTCase):
             ]
         }
 
-        self.graphmgr = MagicMock()
-        self.graphmgr.mapreduce.side_effect = self._mapreduce
-        self.walk = Walkthrough(self.graphmgr)
-
-        patcher = patch('link.graph.dsl.walker.walkthrough.getfeature')
-        self.getfeature = patcher.start()
-        self.getfeature.side_effect = self._getfeature
-        self.addCleanup(patcher.stop)
-
-    def test_walkthrough(self):
         from_ = MagicMock()
         from_.set_ = 'NODES'
         from_.alias = 'elt0'
@@ -116,6 +120,21 @@ class TestWalkthrough(UTCase):
         statement.path = [path]
 
         result = self.walk([statement])
+
+        self.assertIn('elt0', result)
+        self.assertIn('elt1', result)
+        self.assertIn('rel0', result)
+
+        self.assertEqual(result['elt0']['type'], 'nodes')
+
+        self.assertEqual(len(result['elt0']['dataset']), 1)
+        self.assertIn({'_id': 'buzz'}, result['elt0']['dataset'])
+
+        self.assertEqual(len(result['elt1']['dataset']), 1)
+        self.assertIn({'_id': 'sarge'}, result['elt1']['dataset'])
+
+        self.assertEqual(len(result['rel0']['dataset']), 1)
+        self.assertIn({'_id': 'andy'}, result['rel0']['dataset'])
 
 
 if __name__ == '__main__':

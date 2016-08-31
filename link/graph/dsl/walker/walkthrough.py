@@ -41,8 +41,6 @@ class Walkthrough(object):
                 nodes = aliased_sets[last_alias]['dataset']
 
                 for stmt in path.through:
-                    local_nodes = nodes
-
                     if stmt.alias is not None and stmt.alias in aliased_sets:
                         rels = aliased_sets[stmt.alias]['dataset']
 
@@ -59,13 +57,11 @@ class Walkthrough(object):
                         }
 
                     if rels:
-                        local_nodes = self.walk_nodes(
-                            local_nodes,
+                        nodes = self.walk_nodes(
+                            nodes,
                             rels,
                             stmt.wmode
                         )
-
-                        nodes += local_nodes
 
                 for to in path.to:
                     aliased_sets[to.alias] = {
