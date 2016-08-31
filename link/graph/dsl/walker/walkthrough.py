@@ -38,11 +38,13 @@ class Walkthrough(object):
                 last_alias = fromstmt.alias
 
             for path in node.path:
-                nodes = aliased_sets[last_alias]
+                nodes = aliased_sets[last_alias]['dataset']
 
                 for stmt in path.through:
+                    local_nodes = nodes
+
                     if stmt.alias is not None and stmt.alias in aliased_sets:
-                        rels = aliased_sets[stmt.alias]
+                        rels = aliased_sets[stmt.alias]['dataset']
 
                     else:
                         rels = self.select_relationships(
@@ -56,7 +58,14 @@ class Walkthrough(object):
                             'dataset': rels
                         }
 
-                    nodes = self.walk_nodes(nodes, rels, stmt.wmode)
+                    if rels:
+                        local_nodes = self.walk_nodes(
+                            local_nodes,
+                            rels,
+                            stmt.wmode
+                        )
+
+                        nodes += local_nodes
 
                 for to in path.to:
                     aliased_sets[to.alias] = {
@@ -76,11 +85,14 @@ class Walkthrough(object):
         else:
             match = FulltextMatch(fromstmt.filter)
 
-            return self.graphmgr.mapreduce(
-                getmapfunc('walkthrough-select-nodes', match),
+            result = self.graphmgr.mapreduce(
+                'walkthrough-select-nodes',
+                getmapfunc('node', match),
                 reducefunc,
                 aliased_sets[fromstmt.set_]
             )
+            result = result[0] if result else result
+            return result
 
     def select_relationships(self, throughnode, aliased_sets):
         if throughnode.set_ == 'RELS':
@@ -90,11 +102,14 @@ class Walkthrough(object):
         else:
             match = FulltextMatch(throughnode.filter)
 
-            return self.graphmgr.mapreduce(
-                getmapfunc('walkthrough-select-relationships', match),
+            result = self.graphmgr.mapreduce(
+                'walkthrough-select-relationships',
+                getmapfunc('relation', match),
                 reducefunc,
                 aliased_sets[throughnode.set_]
             )
+            result = result[0] if result else result
+            return result
 
     def forward_breadth_nodes(self, nodes, rel_ids):
         store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
@@ -137,21 +152,23 @@ class Walkthrough(object):
             )
 
             for next_node in store.search(query):
-                mapper.emit(
-                    'walkthrough-forward-depth-nodes-i{0}'.format(iteration),
-                    next_node
-                )
+                mapper.emit('next', next_node)
 
         def reduce_next_nodes(mapper, key, next_nodes):
             return self.forward_depth_nodes(
                 next_nodes, rel_ids, begin, end, iteration=iteration + 1
             )
 
-        return self.graphmgr.mapreduce(
+        local_result = self.graphmgr.mapreduce(
+            'walkthrough-forward-depth-nodes-i{0}'.format(iteration),
             map_next_nodes,
             reduce_next_nodes,
             nodes
         )
+        local_result = local_result[0] if local_result else local_result
+        result += local_result
+
+        return result
 
     def backward_breadth_nodes(self, nodes, rel_ids):
         store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
@@ -193,21 +210,24 @@ class Walkthrough(object):
             )
 
             for next_node in store.search(query):
-                mapper.emit(
-                    'walkthrough-backward-depth-nodes-i{0}'.format(iteration),
-                    next_node
-                )
+                mapper.emit('next', next_node)
 
         def reduce_next_nodes(mapper, key, next_nodes):
             return self.backward_depth_nodes(
                 next_nodes, rel_ids, begin, end, iteration=iteration + 1
             )
 
-        return self.graphmgr.mapreduce(
+        local_result = self.graphmgr.mapreduce(
+            'walkthrough-backward-depth-nodes-i{0}'.format(iteration),
             map_next_nodes,
             reduce_next_nodes,
             nodes
         )
+
+        local_result = local_result[0] if local_result else local_result
+        result += local_result
+
+        return result
 
     def breadth_nodes(self, nodes, rel_ids, begin, end, func):
         result = []
@@ -278,8 +298,11 @@ class Walkthrough(object):
     def filter_nodes(self, nodes, to):
         match = FulltextMatch(to.filter)
 
-        return self.graphmgr.mapreduce(
-            getmapfunc('walkthrough-filter-nodes', match),
+        result = self.graphmgr.mapreduce(
+            'walkthrough-filter-nodes',
+            getmapfunc('node', match),
             reducefunc,
             nodes
         )
+        result = result[0] if result else result
+        return result

@@ -275,12 +275,12 @@ class CRUDOperations(object):
             for node in store.search(
                 'targets_set:"{0}:*"'.format(rel_id)
             ):
-                mapper.emit('delete-rels-from-nodes', {
+                mapper.emit('rel', {
                     'node_id': node,
                     'relation': rel_id
                 })
 
-        def reduce_remove_relation_id(mapper, items):
+        def reduce_remove_relation_id(mapper, key, items):
             store = self.graphmgr.nodes_storage
 
             for item in items:
@@ -334,6 +334,7 @@ class CRUDOperations(object):
                 del store[ids]
 
                 self.graphmgr.mapreduce(
+                    'delete-rels:{0}'.format(reducer.identifier),
                     map_remove_relation_id,
                     reduce_remove_relation_id,
                     ids
@@ -344,6 +345,7 @@ class CRUDOperations(object):
 
             if aliased_set['type'] == 'nodes':
                 self.graphmgr.mapreduce(
+                    'delete-nodes',
                     map_deletable_elements,
                     reduce_deletable_elements,
                     aliased_set['dataset']
@@ -353,6 +355,7 @@ class CRUDOperations(object):
                 store = self.graphmgr.relationships_storage
 
                 self.graphmgr.mapreduce(
+                    'delete-rels',
                     map_remove_relation_id,
                     reduce_remove_relation_id,
                     [

@@ -21,15 +21,64 @@ class TestWalkthrough(UTCase):
 
         if featurename == 'fulltext':
             feature.DATA_ID = '_id'
-            feature.search.return_value = expected
+            feature.search.side_effect = lambda name: expected[name]
 
         return feature
 
+    def _mapreduce(self, identifier, mapfunc, reducefunc, dataset):
+        mapped = {}
+
+        def mapper_emit(key, item):
+            key = (identifier, key)
+
+            if key not in mapped:
+                mapped[key] = []
+
+            mapped[key].append(item)
+
+        mapper = MagicMock()
+        mapper.emit.side_effect = mapper_emit
+
+        for item in dataset:
+            mapfunc(mapper, item)
+
+        result = []
+
+        for identifier, key in mapped:
+            reducer = MagicMock()
+            reducer.identifier = identifier
+            result.append(
+                reducefunc(reducer, key, mapped[(identifier, key)])
+            )
+
+        return result
+
     def setUp(self):
-        self.expected_nodes = []
-        self.expected_rels = []
+        self.expected_nodes = {
+            'fromfilter': [
+                {'_id': 'buzz'}
+            ],
+            'targets_set:("andy:buzz")': [
+                {'_id': 'woody'},
+                {'_id': 'rex'}
+            ],
+            'targets_set:("andy:woody")': [
+                {'_id': 'sarge'}
+            ],
+            'targets_set:("andy:rex")': [
+                {'_id': 'sid'}
+            ],
+            'targets_set:("andy:sarge")': [],
+            'targets_set:("andy:sid")': []
+        }
+        self.expected_rels = {
+            'throughfilter': [
+                {'_id': 'andy'}
+            ]
+        }
 
         self.graphmgr = MagicMock()
+        self.graphmgr.mapreduce.side_effect = self._mapreduce
         self.walk = Walkthrough(self.graphmgr)
 
         patcher = patch('link.graph.dsl.walker.walkthrough.getfeature')
@@ -41,7 +90,7 @@ class TestWalkthrough(UTCase):
         from_ = MagicMock()
         from_.set_ = 'NODES'
         from_.alias = 'elt0'
-        from_.filter = 'filter'
+        from_.filter = 'fromfilter'
 
         statement = MagicMock()
         statement.froms = [from_]
@@ -50,17 +99,17 @@ class TestWalkthrough(UTCase):
 
         through = MagicMock()
         through.set_ = 'RELS'
-        through.alias = None
+        through.alias = 'rel0'
         through.wmode.type = 'DEPTH'
-        through.wmode.begin = 5
-        through.wmode.end = 10
+        through.wmode.begin = 2
+        through.wmode.end = 3
         through.wmode.direction = 'BACKWARD'
-        through.filter = 'filter'
+        through.filter = 'throughfilter'
         path.through = [through]
 
         to = MagicMock()
         to.alias = 'elt1'
-        to.filter = 'filter'
+        to.filter = '_id:sarge'
 
         path.to = [to]
 
