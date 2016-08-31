@@ -114,15 +114,18 @@ class Walkthrough(object):
             target.split(':')[1]
             for node in nodes
             for target in node['targets_set']
-            if target.split(':') in rel_ids
+            if target.split(':')[0] in rel_ids
         ]
 
-        query = '{0}:({1})'.format(
-            store.DATA_ID,
-            ' OR '.join(node_ids)
-        )
+        if node_ids:
+            query = '{0}:({1})'.format(
+                store.DATA_ID,
+                ' OR '.join(node_ids)
+            )
 
-        return store.search(query)
+            return store.search(query)
+
+        return []
 
     def forward_depth_nodes(self, nodes, rel_ids, begin, end, iteration=0):
         store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
@@ -139,7 +142,7 @@ class Walkthrough(object):
             node_ids = [
                 target.split(':')[1]
                 for target in node['targets_set']
-                if target.split(':') in rel_ids
+                if target.split(':')[0] in rel_ids
             ]
 
             query = '{0}:({1})'.format(

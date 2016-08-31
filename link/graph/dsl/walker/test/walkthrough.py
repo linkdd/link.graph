@@ -67,7 +67,7 @@ class TestWalkthrough(UTCase):
         self.expected_nodes = {}
         self.expected_rels = {}
 
-    def test_walkthrough(self):
+    def test_walk_depth_backward(self):
         self.expected_nodes = {
             'fromfilter': [
                 {'_id': 'buzz'}
@@ -105,8 +105,8 @@ class TestWalkthrough(UTCase):
         through.set_ = 'RELS'
         through.alias = 'rel0'
         through.wmode.type = 'DEPTH'
-        through.wmode.begin = 2
-        through.wmode.end = 3
+        through.wmode.begin = 1
+        through.wmode.end = 2
         through.wmode.direction = 'BACKWARD'
         through.filter = 'throughfilter'
         path.through = [through]
@@ -126,13 +126,449 @@ class TestWalkthrough(UTCase):
         self.assertIn('rel0', result)
 
         self.assertEqual(result['elt0']['type'], 'nodes')
-
         self.assertEqual(len(result['elt0']['dataset']), 1)
         self.assertIn({'_id': 'buzz'}, result['elt0']['dataset'])
 
+        self.assertEqual(result['elt1']['type'], 'nodes')
         self.assertEqual(len(result['elt1']['dataset']), 1)
         self.assertIn({'_id': 'sarge'}, result['elt1']['dataset'])
 
+        self.assertEqual(result['rel0']['type'], 'relationships')
+        self.assertEqual(len(result['rel0']['dataset']), 1)
+        self.assertIn({'_id': 'andy'}, result['rel0']['dataset'])
+
+    def test_walk_breadth_backward(self):
+        self.expected_nodes = {
+            'fromfilter': [
+                {'_id': 'buzz'}
+            ],
+            'targets_set:("andy:buzz")': [
+                {'_id': 'woody'},
+                {'_id': 'rex'}
+            ],
+            'targets_set:("andy:woody" OR "andy:rex")': [
+                {'_id': 'sarge'},
+                {'_id': 'sid'}
+            ]
+        }
+        self.expected_rels = {
+            'throughfilter': [
+                {'_id': 'andy'}
+            ]
+        }
+
+        from_ = MagicMock()
+        from_.set_ = 'NODES'
+        from_.alias = 'elt0'
+        from_.filter = 'fromfilter'
+
+        statement = MagicMock()
+        statement.froms = [from_]
+
+        path = MagicMock()
+
+        through = MagicMock()
+        through.set_ = 'RELS'
+        through.alias = 'rel0'
+        through.wmode.type = 'BREADTH'
+        through.wmode.begin = 1
+        through.wmode.end = 2
+        through.wmode.direction = 'BACKWARD'
+        through.filter = 'throughfilter'
+        path.through = [through]
+
+        to = MagicMock()
+        to.alias = 'elt1'
+        to.filter = '_id:sarge'
+
+        path.to = [to]
+
+        statement.path = [path]
+
+        result = self.walk([statement])
+
+        self.assertIn('elt0', result)
+        self.assertIn('elt1', result)
+        self.assertIn('rel0', result)
+
+        self.assertEqual(result['elt0']['type'], 'nodes')
+        self.assertEqual(len(result['elt0']['dataset']), 1)
+        self.assertIn({'_id': 'buzz'}, result['elt0']['dataset'])
+
+        self.assertEqual(result['elt1']['type'], 'nodes')
+        self.assertEqual(len(result['elt1']['dataset']), 1)
+        self.assertIn({'_id': 'sarge'}, result['elt1']['dataset'])
+
+        self.assertEqual(result['rel0']['type'], 'relationships')
+        self.assertEqual(len(result['rel0']['dataset']), 1)
+        self.assertIn({'_id': 'andy'}, result['rel0']['dataset'])
+
+    def test_walk_breadth_backward_noend(self):
+        self.expected_nodes = {
+            'fromfilter': [
+                {'_id': 'buzz'}
+            ],
+            'targets_set:("andy:buzz")': [
+                {'_id': 'woody'},
+                {'_id': 'rex'}
+            ],
+            'targets_set:("andy:woody" OR "andy:rex")': [
+                {'_id': 'sarge'},
+                {'_id': 'sid'}
+            ],
+            'targets_set:("andy:sarge" OR "andy:sid")': []
+        }
+        self.expected_rels = {
+            'throughfilter': [
+                {'_id': 'andy'}
+            ]
+        }
+
+        from_ = MagicMock()
+        from_.set_ = 'NODES'
+        from_.alias = 'elt0'
+        from_.filter = 'fromfilter'
+
+        statement = MagicMock()
+        statement.froms = [from_]
+
+        path = MagicMock()
+
+        through = MagicMock()
+        through.set_ = 'RELS'
+        through.alias = 'rel0'
+        through.wmode.type = 'BREADTH'
+        through.wmode.begin = 1
+        through.wmode.end = None
+        through.wmode.direction = 'BACKWARD'
+        through.filter = 'throughfilter'
+        path.through = [through]
+
+        to = MagicMock()
+        to.alias = 'elt1'
+        to.filter = '_id:sarge'
+
+        path.to = [to]
+
+        statement.path = [path]
+
+        result = self.walk([statement])
+
+        self.assertIn('elt0', result)
+        self.assertIn('elt1', result)
+        self.assertIn('rel0', result)
+
+        self.assertEqual(result['elt0']['type'], 'nodes')
+        self.assertEqual(len(result['elt0']['dataset']), 1)
+        self.assertIn({'_id': 'buzz'}, result['elt0']['dataset'])
+
+        self.assertEqual(result['elt1']['type'], 'nodes')
+        self.assertEqual(len(result['elt1']['dataset']), 1)
+        self.assertIn({'_id': 'sarge'}, result['elt1']['dataset'])
+
+        self.assertEqual(result['rel0']['type'], 'relationships')
+        self.assertEqual(len(result['rel0']['dataset']), 1)
+        self.assertIn({'_id': 'andy'}, result['rel0']['dataset'])
+
+    def test_walk_depth_forward(self):
+        self.expected_nodes = {
+            'fromfilter': [
+                {
+                    '_id': 'buzz',
+                    'targets_set': [
+                        'andy:woody',
+                        'andy:rex'
+                    ]
+                }
+            ],
+            '_id:(woody OR rex)': [
+                {
+                    '_id': 'woody',
+                    'targets_set': [
+                        'andy:sarge'
+                    ]
+                },
+                {
+                    '_id': 'rex',
+                    'targets_set': [
+                        'andy:sid'
+                    ]
+                }
+            ],
+            '_id:(sarge)': [
+                {
+                    '_id': 'sarge',
+                    'targets_set': []
+                }
+            ],
+            '_id:(sid)': [
+                {
+                    '_id': 'sid',
+                    'targets_set': []
+                }
+            ]
+        }
+        self.expected_rels = {
+            'throughfilter': [
+                {'_id': 'andy'}
+            ]
+        }
+
+        from_ = MagicMock()
+        from_.set_ = 'NODES'
+        from_.alias = 'elt0'
+        from_.filter = 'fromfilter'
+
+        statement = MagicMock()
+        statement.froms = [from_]
+
+        path = MagicMock()
+
+        through = MagicMock()
+        through.set_ = 'RELS'
+        through.alias = 'rel0'
+        through.wmode.type = 'DEPTH'
+        through.wmode.begin = 1
+        through.wmode.end = 2
+        through.wmode.direction = 'FORWARD'
+        through.filter = 'throughfilter'
+        path.through = [through]
+
+        to = MagicMock()
+        to.alias = 'elt1'
+        to.filter = '_id:sarge'
+
+        path.to = [to]
+
+        statement.path = [path]
+
+        result = self.walk([statement])
+
+        self.assertIn('elt0', result)
+        self.assertIn('elt1', result)
+        self.assertIn('rel0', result)
+
+        self.assertEqual(result['elt0']['type'], 'nodes')
+        self.assertEqual(len(result['elt0']['dataset']), 1)
+        self.assertIn(
+            {
+                '_id': 'buzz',
+                'targets_set': ['andy:woody', 'andy:rex']
+            },
+            result['elt0']['dataset']
+        )
+
+        self.assertEqual(result['elt1']['type'], 'nodes')
+        self.assertEqual(len(result['elt1']['dataset']), 1)
+        self.assertIn(
+            {
+                '_id': 'sarge',
+                'targets_set': []
+            },
+            result['elt1']['dataset']
+        )
+
+        self.assertEqual(result['rel0']['type'], 'relationships')
+        self.assertEqual(len(result['rel0']['dataset']), 1)
+        self.assertIn({'_id': 'andy'}, result['rel0']['dataset'])
+
+    def test_walk_breadth_forward(self):
+        self.expected_nodes = {
+            'fromfilter': [
+                {
+                    '_id': 'buzz',
+                    'targets_set': [
+                        'andy:woody',
+                        'andy:rex'
+                    ]
+                }
+            ],
+            '_id:(woody OR rex)': [
+                {
+                    '_id': 'woody',
+                    'targets_set': [
+                        'andy:sarge'
+                    ]
+                },
+                {
+                    '_id': 'rex',
+                    'targets_set': [
+                        'andy:sid'
+                    ]
+                }
+            ],
+            '_id:(sarge OR sid)': [
+                {
+                    '_id': 'sarge',
+                    'targets_set': []
+                },
+                {
+                    '_id': 'sid',
+                    'targets_set': []
+                }
+            ]
+        }
+        self.expected_rels = {
+            'throughfilter': [
+                {'_id': 'andy'}
+            ]
+        }
+
+        from_ = MagicMock()
+        from_.set_ = 'NODES'
+        from_.alias = 'elt0'
+        from_.filter = 'fromfilter'
+
+        statement = MagicMock()
+        statement.froms = [from_]
+
+        path = MagicMock()
+
+        through = MagicMock()
+        through.set_ = 'RELS'
+        through.alias = 'rel0'
+        through.wmode.type = 'BREADTH'
+        through.wmode.begin = 1
+        through.wmode.end = 2
+        through.wmode.direction = 'FORWARD'
+        through.filter = 'throughfilter'
+        path.through = [through]
+
+        to = MagicMock()
+        to.alias = 'elt1'
+        to.filter = '_id:sarge'
+
+        path.to = [to]
+
+        statement.path = [path]
+
+        result = self.walk([statement])
+
+        self.assertIn('elt0', result)
+        self.assertIn('elt1', result)
+        self.assertIn('rel0', result)
+
+        self.assertEqual(result['elt0']['type'], 'nodes')
+        self.assertEqual(len(result['elt0']['dataset']), 1)
+        self.assertIn(
+            {
+                '_id': 'buzz',
+                'targets_set': ['andy:woody', 'andy:rex']
+            },
+            result['elt0']['dataset']
+        )
+
+        self.assertEqual(result['elt1']['type'], 'nodes')
+        self.assertEqual(len(result['elt1']['dataset']), 1)
+        self.assertIn(
+            {
+                '_id': 'sarge',
+                'targets_set': []
+            },
+            result['elt1']['dataset']
+        )
+
+        self.assertEqual(result['rel0']['type'], 'relationships')
+        self.assertEqual(len(result['rel0']['dataset']), 1)
+        self.assertIn({'_id': 'andy'}, result['rel0']['dataset'])
+
+    def test_walk_breadth_forward_noend(self):
+        self.expected_nodes = {
+            'fromfilter': [
+                {
+                    '_id': 'buzz',
+                    'targets_set': [
+                        'andy:woody',
+                        'andy:rex'
+                    ]
+                }
+            ],
+            '_id:(woody OR rex)': [
+                {
+                    '_id': 'woody',
+                    'targets_set': [
+                        'andy:sarge'
+                    ]
+                },
+                {
+                    '_id': 'rex',
+                    'targets_set': [
+                        'andy:sid'
+                    ]
+                }
+            ],
+            '_id:(sarge OR sid)': [
+                {
+                    '_id': 'sarge',
+                    'targets_set': []
+                },
+                {
+                    '_id': 'sid',
+                    'targets_set': []
+                }
+            ]
+        }
+        self.expected_rels = {
+            'throughfilter': [
+                {'_id': 'andy'}
+            ]
+        }
+
+        from_ = MagicMock()
+        from_.set_ = 'NODES'
+        from_.alias = 'elt0'
+        from_.filter = 'fromfilter'
+
+        statement = MagicMock()
+        statement.froms = [from_]
+
+        path = MagicMock()
+
+        through = MagicMock()
+        through.set_ = 'RELS'
+        through.alias = 'rel0'
+        through.wmode.type = 'BREADTH'
+        through.wmode.begin = 1
+        through.wmode.end = None
+        through.wmode.direction = 'FORWARD'
+        through.filter = 'throughfilter'
+        path.through = [through]
+
+        to = MagicMock()
+        to.alias = 'elt1'
+        to.filter = '_id:sarge'
+
+        path.to = [to]
+
+        statement.path = [path]
+
+        result = self.walk([statement])
+
+        self.assertIn('elt0', result)
+        self.assertIn('elt1', result)
+        self.assertIn('rel0', result)
+
+        self.assertEqual(result['elt0']['type'], 'nodes')
+        self.assertEqual(len(result['elt0']['dataset']), 1)
+        self.assertIn(
+            {
+                '_id': 'buzz',
+                'targets_set': ['andy:woody', 'andy:rex']
+            },
+            result['elt0']['dataset']
+        )
+
+        self.assertEqual(result['elt1']['type'], 'nodes')
+        self.assertEqual(len(result['elt1']['dataset']), 1)
+        self.assertIn(
+            {
+                '_id': 'sarge',
+                'targets_set': []
+            },
+            result['elt1']['dataset']
+        )
+
+        self.assertEqual(result['rel0']['type'], 'relationships')
         self.assertEqual(len(result['rel0']['dataset']), 1)
         self.assertIn({'_id': 'andy'}, result['rel0']['dataset'])
 
