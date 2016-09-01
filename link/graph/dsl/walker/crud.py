@@ -300,18 +300,19 @@ class CRUDOperations(object):
 
     def do_DeleteStatementNode(self, statement, aliased_sets):
         def map_remove_relation_id(mapper, rel_id):
-            store = self.graphmgr.nodes_storage
+            store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
 
             for node in store.search(
                 'targets_set:"{0}:*"'.format(rel_id)
             ):
                 mapper.emit('rel', {
-                    'node_id': node,
+                    'node': node,
                     'relation': rel_id
                 })
 
         def reduce_remove_relation_id(mapper, key, items):
             store = self.graphmgr.nodes_storage
+            data_id = getfeature(store, 'fulltext').DATA_ID
 
             for item in items:
                 removes = [
@@ -320,7 +321,7 @@ class CRUDOperations(object):
                     if target.startswith('{0}:'.format(item['relation']))
                 ]
 
-                node_id = item['node'][store.DATA_ID]
+                node_id = item['node'][data_id]
                 node = store[node_id]
 
                 for remove in removes:
@@ -346,10 +347,10 @@ class CRUDOperations(object):
                 'targets_set:"*:{0}"'.format(node_id)
             ):
                 for target in prev['targets_set']:
-                    mapper.emit(
-                        'deletable-elements-rels',
-                        target.split(':')[0]
-                    )
+                    t_rel_id, t_node_id = target.split(':')
+
+                    if t_node_id == node_id:
+                        mapper.emit('deletable-elements-rels', t_rel_id)
 
         def reduce_deletable_elements(reducer, key, values):
             if key == 'deletable-elements-nodes':
@@ -383,16 +384,14 @@ class CRUDOperations(object):
 
             elif aliased_set['type'] == 'relationships':
                 store = self.graphmgr.relationships_storage
+                data_id = getfeature(store, 'fulltext').DATA_ID
 
                 self.graphmgr.mapreduce(
                     'delete-rels',
                     map_remove_relation_id,
                     reduce_remove_relation_id,
                     [
-                        rel[store.DATA_ID]
+                        rel[data_id]
                         for rel in aliased_set['dataset']
                     ]
                 )
-
-            else:
-                continue

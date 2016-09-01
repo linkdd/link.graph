@@ -148,6 +148,8 @@ class TestCRUD(UTCase):
         self.expected_nodes = {}
         self.expected_rels = {}
 
+
+class TestNodeCRUD(TestCRUD):
     def test_create_node(self):
         stmt = MagicMock()
         stmt.__class__.__name__ = 'CreateStatementNode'
@@ -224,7 +226,24 @@ class TestCRUD(UTCase):
         update0.propname = 'foo'
         update0.value = 'bar'
 
-        stmt.updates = [update0]
+        update1 = MagicMock()
+        update1.__class__.__name__ = 'UpdateAddPropertyNode'
+        update1.alias = 'elt0'
+        update1.propname = 'bar'
+        update1.value = 'biz'
+
+        update2 = MagicMock()
+        update2.__class__.__name__ = 'UpdateUnsetPropertyNode'
+        update2.alias = 'elt0'
+        update2.propname = 'baz'
+
+        update3 = MagicMock()
+        update3.__class__.__name__ = 'UpdateDelPropertyNode'
+        update3.alias = 'elt0'
+        update3.propname = 'bar'
+        update3.value = 'baz'
+
+        stmt.updates = [update0, update1, update2, update3]
 
         aliased_sets = {
             'elt0': {
@@ -235,7 +254,11 @@ class TestCRUD(UTCase):
             }
         }
 
-        m = Map(value={'foo_register': 'foo'})
+        m = Map(value={
+            'foo_register': 'foo',
+            'bar_set': {'baz'},
+            'baz_register': 'foo'
+        })
         self.nodes = {
             'foo': m
         }
@@ -245,8 +268,73 @@ class TestCRUD(UTCase):
         self.assertEqual(len(result), 1)
         self.assertIn('elt0', result[0])
         self.assertEqual(len(result[0]['elt0']), 1)
-        self.assertIn({'_id': 'foo', 'foo_register': 'bar'}, result[0]['elt0'])
-        self.assertEqual(self.nodes['foo'].current, {'foo_register': 'bar'})
+
+        expected = {
+            '_id': 'foo',
+            'foo_register': 'bar',
+            'bar_set': {'biz'}
+        }
+        self.assertIn(expected, result[0]['elt0'])
+        del expected['_id']
+        self.assertEqual(self.nodes['foo'].current, expected)
+
+    def test_delete_node(self):
+        stmt = MagicMock()
+        stmt.__class__.__name__ = 'DeleteStatementNode'
+        stmt.aliases = ['elt0']
+
+        aliased_sets = {
+            'elt0': {
+                'type': 'nodes',
+                'dataset': [
+                    {
+                        '_id': 'buzz',
+                        'targets_set': [
+                            'andy:woody'
+                        ]
+                    }
+                ]
+            }
+        }
+
+        self.nodes['buzz'] = Map(value={
+            'targets_set': {'andy:woody'}
+        })
+        self.nodes['woody'] = Map(value={
+            'targets_set': {
+                'squeeze:buzz',
+                'lenny:mrpotato'
+            }
+        })
+
+        self.relationships['andy'] = Map(value={'weight_counter': 50})
+        self.relationships['squeeze'] = Map(value={'weight_counter': 50})
+
+        self.expected_nodes = {
+            'targets_set:"*:buzz"': [
+                {
+                    '_id': 'woody',
+                    'targets_set': [
+                        'squeeze:buzz',
+                        'lenny:mrpotato'
+                    ]
+                }
+            ],
+            'targets_set:"andy:*"': [],
+            'targets_set:"squeeze:*"': [
+                {
+                    '_id': 'woody',
+                    'targets_set': [
+                        'squeeze:buzz',
+                        'lenny:mrpotato'
+                    ]
+                }
+            ]
+        }
+
+        result = self.crud([stmt], aliased_sets)
+        print(result)
+        print(self.nodes['woody'].current)
 
 
 if __name__ == '__main__':
