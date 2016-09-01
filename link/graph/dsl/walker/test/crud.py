@@ -333,8 +333,17 @@ class TestNodeCRUD(TestCRUD):
         }
 
         result = self.crud([stmt], aliased_sets)
-        print(result)
-        print(self.nodes['woody'].current)
+
+        self.assertEqual(len(result), 0)
+        self.assertNotIn('buzz', self.nodes)
+        self.assertNotIn('andy', self.relationships)
+        self.assertNotIn('squeeze', self.relationships)
+        self.assertEqual(
+            self.nodes['woody'].current,
+            {
+                'targets_set': {'lenny:mrpotato'}
+            }
+        )
 
 
 if __name__ == '__main__':
