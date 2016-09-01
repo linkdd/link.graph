@@ -572,6 +572,259 @@ class TestWalkthrough(UTCase):
         self.assertEqual(len(result['rel0']['dataset']), 1)
         self.assertIn({'_id': 'andy'}, result['rel0']['dataset'])
 
+    def test_complex_walkthrough(self):
+        self.expected_nodes = {
+            'fromfilter': [
+                {
+                    '_id': 'buzz',
+                    'targets_set': [
+                        'andy:woody',
+                        'andy:rex'
+                    ]
+                },
+                {
+                    '_id': 'lenny',
+                    'targets_set': []
+                }
+            ],
+            '_id:(woody OR rex)': [
+                {
+                    '_id': 'woody',
+                    'targets_set': [
+                        'andy:sarge'
+                    ]
+                },
+                {
+                    '_id': 'rex',
+                    'targets_set': [
+                        'andy:sid'
+                    ]
+                }
+            ],
+            '_id:(sarge OR sid)': [
+                {
+                    '_id': 'sarge',
+                    'targets_set': []
+                },
+                {
+                    '_id': 'sid',
+                    'targets_set': []
+                }
+            ],
+            'targets_set:("molly:sarge")': [
+                {
+                    '_id': 'squeeze',
+                    'targets_set': []
+                }
+            ],
+            'targets_set:("molly:sid")': [
+                {
+                    '_id': 'squeeze',
+                    'targets_set': []
+                }
+            ],
+            'targets_set:("molly:squeeze")': [
+                {
+                    '_id': 'hamm',
+                    'targets_set': []
+                }
+            ],
+            'targets_set:("andy:sarge" OR "molly:sarge")': [
+                {
+                    '_id': 'squeeze',
+                    'targets_set': []
+                }
+            ],
+            'targets_set:("andy:sid" OR "molly:sid")': [
+                {
+                    '_id': 'squeeze',
+                    'targets_set': []
+                }
+            ],
+            'targets_set:("andy:squeeze" OR "molly:squeeze")': [
+                {
+                    '_id': 'hamm',
+                    'targets_set': []
+                }
+            ],
+            'targets_set:("molly:hamm")': [
+                {
+                    '_id': 'bopeep',
+                    'targets_set': []
+                }
+            ],
+            'targets_set:("molly:bopeep")': [
+                {
+                    '_id': 'mrpotato',
+                    'targets_set': []
+                }
+            ]
+        }
+        self.expected_rels = {
+            'through0filter': [
+                {'_id': 'andy'},
+                {'_id': 'molly'}
+            ]
+        }
+
+        from0 = MagicMock()
+        from0.set_ = 'NODES'
+        from0.alias = 'elt0'
+        from0.filter = 'fromfilter'
+
+        from1 = MagicMock()
+        from1.set_ = 'elt0'
+        from1.alias = 'elt1'
+        from1.filter = ''
+
+        from2 = MagicMock()
+        from2.set_ = 'elt1'
+        from2.alias = 'elt2'
+        from2.filter = '_id:buzz'
+
+        statement = MagicMock()
+        statement.froms = [from0, from1, from2]
+
+        path = MagicMock()
+
+        through0 = MagicMock()
+        through0.set_ = 'RELS'
+        through0.alias = 'rel0'
+        through0.wmode.type = 'BREADTH'
+        through0.wmode.begin = 1
+        through0.wmode.end = None
+        through0.wmode.direction = 'FORWARD'
+        through0.filter = 'through0filter'
+
+        through1 = MagicMock()
+        through1.set_ = 'rel0'
+        through1.alias = 'rel1'
+        through1.wmode.type = 'DEPTH'
+        through1.wmode.begin = 1
+        through1.wmode.end = 2
+        through1.wmode.direction = 'BACKWARD'
+        through1.filter = '_id:molly'
+
+        through2 = MagicMock()
+        through2.set_ = 'rel1'
+        through2.alias = 'rel1'
+        through2.wmode.type = 'DEPTH'
+        through2.wmode.begin = 1
+        through2.wmode.end = 2
+        through2.wmode.direction = 'BACKWARD'
+        through2.filter = ''
+
+        path.through = [through0, through1, through2]
+
+        to0 = MagicMock()
+        to0.alias = 'elt3'
+        to0.filter = '_id:mrpotato'
+
+        to1 = MagicMock()
+        to1.alias = 'elt4'
+        to1.filter = ''
+
+        path.to = [to0, to1]
+
+        statement.path = [path]
+
+        result = self.walk([statement])
+
+        self.assertIn('elt0', result)
+        self.assertIn('elt1', result)
+        self.assertIn('elt2', result)
+        self.assertIn('elt3', result)
+        self.assertIn('elt4', result)
+        self.assertIn('rel0', result)
+        self.assertIn('rel1', result)
+
+        self.assertEqual(result['elt0']['type'], 'nodes')
+        self.assertEqual(len(result['elt0']['dataset']), 2)
+        self.assertIn(
+            {
+                '_id': 'buzz',
+                'targets_set': ['andy:woody', 'andy:rex']
+            },
+            result['elt0']['dataset']
+        )
+        self.assertIn(
+            {
+                '_id': 'lenny',
+                'targets_set': []
+            },
+            result['elt0']['dataset']
+        )
+
+        self.assertEqual(result['elt1']['type'], 'nodes')
+        self.assertEqual(len(result['elt1']['dataset']), 2)
+        self.assertIn(
+            {
+                '_id': 'buzz',
+                'targets_set': ['andy:woody', 'andy:rex']
+            },
+            result['elt1']['dataset']
+        )
+        self.assertIn(
+            {
+                '_id': 'lenny',
+                'targets_set': []
+            },
+            result['elt1']['dataset']
+        )
+
+        self.assertEqual(result['elt2']['type'], 'nodes')
+        self.assertEqual(len(result['elt2']['dataset']), 1)
+        self.assertIn(
+            {
+                '_id': 'buzz',
+                'targets_set': ['andy:woody', 'andy:rex']
+            },
+            result['elt2']['dataset']
+        )
+
+        self.assertEqual(result['elt3']['type'], 'nodes')
+        self.assertEqual(len(result['elt3']['dataset']), 1)
+        self.assertIn(
+            {
+                '_id': 'mrpotato',
+                'targets_set': []
+            },
+            result['elt3']['dataset']
+        )
+
+        self.assertEqual(result['elt4']['type'], 'nodes')
+        self.assertEqual(len(result['elt4']['dataset']), 3)
+        self.assertIn(
+            {
+                '_id': 'hamm',
+                'targets_set': []
+            },
+            result['elt4']['dataset']
+        )
+        self.assertIn(
+            {
+                '_id': 'bopeep',
+                'targets_set': []
+            },
+            result['elt4']['dataset']
+        )
+        self.assertIn(
+            {
+                '_id': 'mrpotato',
+                'targets_set': []
+            },
+            result['elt4']['dataset']
+        )
+
+        self.assertEqual(result['rel0']['type'], 'relationships')
+        self.assertEqual(len(result['rel0']['dataset']), 2)
+        self.assertIn({'_id': 'andy'}, result['rel0']['dataset'])
+        self.assertIn({'_id': 'molly'}, result['rel0']['dataset'])
+
+        self.assertEqual(result['rel1']['type'], 'relationships')
+        self.assertEqual(len(result['rel1']['dataset']), 1)
+        self.assertIn({'_id': 'molly'}, result['rel1']['dataset'])
+
 
 if __name__ == '__main__':
     main()

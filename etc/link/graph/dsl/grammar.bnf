@@ -64,7 +64,7 @@ from::FromNode = "FROM" set:alias filter:type_filter "AS" alias:alias ;
 walk_type::FollowTypeNode = value:("DEPTH" | "BREADTH") ;
 direction::DirectionNode = value:("BACKWARD" | "FORWARD" | "BOTH") ;
 walkmode::WalkModeNode = [ type:walk_type ] [ direction:direction ] [ begin:natural ] [ end:(natural | "*") ] ;
-through::ThroughNode = "THROUGH" set:alias [ filter:type_filter ] "AS" alias:alias [ wmode:walkmode ] ;
+through::ThroughNode = "THROUGH" set:alias [ filter:type_filter ] [ "AS" alias:alias ] [ wmode:walkmode ] ;
 to::ToNode = "TO" [ filter:type_filter ] alias:alias ;
 
 path::PathNode = through:{ through }+ to:{ to }+ ;

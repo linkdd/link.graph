@@ -53,10 +53,12 @@ class CRUDOperations(object):
         data_id_val = None
 
         newelt = Map()
-        map(newelt['type_set'].add, statement.types)
+
+        for elttype in statement.types:
+            newelt['type_set'].add(elttype)
 
         for assign in statement.properties:
-            if assign.__class__.__name == 'AssignAddNode':
+            if assign.__class__.__name__ == 'AssignAddNode':
                 newelt[assign.propname].add(assign.val)
 
             elif assign.__class__.__name__ == 'AssignSetNode':
@@ -67,14 +69,20 @@ class CRUDOperations(object):
                     newelt[assign.propname].assign(assign.val)
 
         if data_id_val is None:
-            data_id_val = uuid4()
+            data_id_val = str(uuid4())
 
         store[data_id_val] = newelt
 
         if statement.alias is not None:
             if statement.alias not in aliased_sets:
+                if store is self.graphmgr.nodes_storage:
+                    settype = 'nodes'
+
+                elif store is self.graphmgr.relationships_storage:
+                    settype = 'relationships'
+
                 aliased_sets[statement.alias] = {
-                    'type': 'node',
+                    'type': settype,
                     'dataset': []
                 }
 
@@ -151,6 +159,16 @@ class CRUDOperations(object):
 
         return result
 
+    def compute_result(self, data_id, ids, result):
+        computed = []
+
+        for i, crdt in enumerate(result):
+            doc = crdt.current
+            doc[data_id] = ids[i]
+            computed.append(doc)
+
+        return computed
+
     def do_UpdateSetPropertyNode(self, statement, aliased_sets):
         result = {}
 
@@ -163,8 +181,10 @@ class CRUDOperations(object):
         elif aliased_sets[alias]['type'] == 'relationships':
             store = self.graphmgr.relationships_storage
 
+        data_id = getfeature(store, 'fulltext').DATA_ID
+
         ids = [
-            elt[store.DATA_ID]
+            elt[data_id]
             for elt in aliased_sets[alias]['dataset']
         ]
 
@@ -174,6 +194,7 @@ class CRUDOperations(object):
             elt[key].assign(statement.value)
 
         store[ids] = result[alias]
+        result[alias] = self.compute_result(data_id, ids, result[alias])
 
         return result
 
@@ -189,8 +210,10 @@ class CRUDOperations(object):
         elif aliased_sets[alias]['type'] == 'relationships':
             store = self.graphmgr.relationships_storage
 
+        data_id = getfeature(store, 'fulltext').DATA_ID
+
         ids = [
-            elt[store.DATA_ID]
+            elt[data_id]
             for elt in aliased_sets[alias]['dataset']
         ]
 
@@ -200,6 +223,7 @@ class CRUDOperations(object):
             elt[key].add(statement.value)
 
         store[ids] = result[alias]
+        result[alias] = self.compute_result(data_id, ids, result[alias])
 
         return result
 
@@ -215,8 +239,10 @@ class CRUDOperations(object):
         elif aliased_sets[alias]['type'] == 'relationships':
             store = self.graphmgr.relationships_storage
 
+        data_id = getfeature(store, 'fulltext').DATA_ID
+
         ids = [
-            elt[store.DATA_ID]
+            elt[data_id]
             for elt in aliased_sets[alias]['dataset']
         ]
 
@@ -226,6 +252,7 @@ class CRUDOperations(object):
             del elt[key]
 
         store[ids] = result[alias]
+        result[alias] = self.compute_result(data_id, ids, result[alias])
 
         return result
 
@@ -241,8 +268,10 @@ class CRUDOperations(object):
         elif aliased_sets[alias]['type'] == 'relationships':
             store = self.graphmgr.relationships_storage
 
+        data_id = getfeature(store, 'fulltext').DATA_ID
+
         ids = [
-            elt[store.DATA_ID]
+            elt[data_id]
             for elt in aliased_sets[alias]['dataset']
         ]
 
@@ -252,6 +281,7 @@ class CRUDOperations(object):
             elt[key].discard(statement.value)
 
         store[ids] = result[alias]
+        result[alias] = self.compute_result(data_id, ids, result[alias])
 
         return result
 

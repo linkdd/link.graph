@@ -41,14 +41,10 @@ class Walkthrough(object):
                 nodes = aliased_sets[last_alias]['dataset']
 
                 for stmt in path.through:
-                    if stmt.alias is not None and stmt.alias in aliased_sets:
-                        rels = aliased_sets[stmt.alias]['dataset']
-
-                    else:
-                        rels = self.select_relationships(
-                            stmt,
-                            aliased_sets
-                        )
+                    rels = self.select_relationships(
+                        stmt,
+                        aliased_sets
+                    )
 
                     if stmt.alias is not None:
                         aliased_sets[stmt.alias] = {
@@ -71,7 +67,28 @@ class Walkthrough(object):
 
                     last_alias = to.alias
 
+        for alias in aliased_sets:
+            self.uniq_elts(aliased_sets[alias])
+
         return aliased_sets
+
+    def uniq_elts(self, aliased_set):
+        if aliased_set['type'] == 'nodes':
+            store = getfeature(self.graphmgr.nodes_storage, 'fulltext')
+
+        elif aliased_set['type'] == 'relationships':
+            store = getfeature(self.graphmgr.relationships_storage, 'fulltext')
+
+        data_id = store.DATA_ID
+        ids = []
+        result = []
+
+        for elt in aliased_set['dataset']:
+            if elt[data_id] not in ids:
+                ids.append(elt[data_id])
+                result.append(elt)
+
+        aliased_set['dataset'] = result
 
     def select_nodes(self, fromstmt, aliased_sets):
         if fromstmt.set_ == 'NODES':
@@ -79,13 +96,17 @@ class Walkthrough(object):
             return store.search(fromstmt.filter)
 
         else:
-            match = FulltextMatch(fromstmt.filter)
+            if fromstmt.filter:
+                match = FulltextMatch(fromstmt.filter)
+
+            else:
+                match = lambda item: True
 
             result = self.graphmgr.mapreduce(
                 'walkthrough-select-nodes',
                 getmapfunc('node', match),
                 reducefunc,
-                aliased_sets[fromstmt.set_]
+                aliased_sets[fromstmt.set_]['dataset']
             )
             result = result[0] if result else result
             return result
@@ -96,13 +117,17 @@ class Walkthrough(object):
             return store.search(throughnode.filter)
 
         else:
-            match = FulltextMatch(throughnode.filter)
+            if throughnode.filter:
+                match = FulltextMatch(throughnode.filter)
+
+            else:
+                match = lambda item: True
 
             result = self.graphmgr.mapreduce(
                 'walkthrough-select-relationships',
                 getmapfunc('relation', match),
                 reducefunc,
-                aliased_sets[throughnode.set_]
+                aliased_sets[throughnode.set_]['dataset']
             )
             result = result[0] if result else result
             return result
@@ -295,7 +320,11 @@ class Walkthrough(object):
         return result
 
     def filter_nodes(self, nodes, to):
-        match = FulltextMatch(to.filter)
+        if to.filter:
+            match = FulltextMatch(to.filter)
+
+        else:
+            match = lambda item: True
 
         result = self.graphmgr.mapreduce(
             'walkthrough-filter-nodes',
