@@ -346,5 +346,58 @@ class TestNodeCRUD(TestCRUD):
         )
 
 
+class TestRelationCRUD(TestCRUD):
+    def test_create_rel_with_alias(self):
+        self.expected_nodes = {
+            'targets_set:"*:woody"': []
+        }
+
+        stmt = MagicMock()
+        stmt.__class__.__name__ = 'CreateStatementNode'
+        stmt.typed.__class__.__name__ = 'RelationTypeNode'
+        stmt.typed.types = ['r1', 'r2']
+
+        stmt.typed.links.source.__class__.__name__ = 'AliasNode'
+        stmt.typed.links.source.name = 'node0'
+
+        stmt.typed.links.target.__class__.__name__ = 'AliasNode'
+        stmt.typed.links.target.name = 'node1'
+
+        assign0 = MagicMock()
+        assign0.__class__.__name__ = 'AssignSetNode'
+        assign0.propname = '_id'
+        assign0.val = 'foo'
+
+        stmt.typed.properties = [assign0]
+        stmt.typed.alias = 'rel0'
+
+        aliased_sets = {
+            'node0': {
+                'type': 'node',
+                'dataset': [
+                    {'_id': 'buzz'}
+                ]
+            },
+            'node1': {
+                'type': 'node',
+                'dataset': [
+                    {'_id': 'woody'}
+                ]
+            }
+        }
+        result = self.crud([stmt], aliased_sets)
+
+        self.assertEqual(len(result), 0)
+        self.assertIn('rel0', aliased_sets)
+        self.assertEqual(aliased_sets['rel0']['type'], 'relationships')
+        self.assertEqual(len(aliased_sets['rel0']['dataset']), 1)
+
+        result = aliased_sets['rel0']['dataset'][0]
+
+        self.assertEqual(result['_id'], 'foo')
+        self.assertEqual(result['type_set'], {'r1', 'r2'})
+        self.assertIn('foo', self.graphmgr.relationships_storage)
+
+
 if __name__ == '__main__':
     main()

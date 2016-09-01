@@ -98,25 +98,24 @@ class CRUDOperations(object):
         self.create_element(store, statement, aliased_sets)
 
     def do_RelationTypeNode(self, statement, aliased_sets):
-        rstore = getfeature(self.graphmgr.relationships_storage, 'fulltext')
         nstore = getfeature(self.graphmgr.nodes_storage, 'fulltext')
 
         sources, targets = self.get_links(statement.links, aliased_sets)
 
         for source in sources:
             newrel, data_id = self.create_element(
-                rstore,
+                self.graphmgr.relationships_storage,
                 statement,
                 aliased_sets
             )
 
-            source_id = source[nstore.DATA_ID]
+            source_id = source.pop(nstore.DATA_ID)
             source = Map(value=source)
 
             for target in targets:
                 source['targets_set'].add(
                     '{0}:{1}'.format(
-                        newrel[rstore.DATA_ID],
+                        data_id,
                         target[nstore.DATA_ID]
                     )
                 )
@@ -129,7 +128,7 @@ class CRUDOperations(object):
             self.graphmgr.nodes_storage[source_id] = source
 
             for target in targets:
-                target_id = target[nstore.DATA_ID]
+                target_id = target.pop(nstore.DATA_ID)
                 target = Map(value=target)
 
                 target['n_rels_counter'].increment(n)
