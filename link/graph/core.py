@@ -24,15 +24,18 @@ def getparser(cls):
         'GRAPHMANAGER',
         Parameter(
             name='parallel_backend',
-            parser=getparser(MapReduceMiddleware)
+            parser=getparser(MapReduceMiddleware),
+            svalue='mapreduce+parallel:///graph'
         ),
         Parameter(
             name='nodes_storage',
-            parser=getparser(KeyValueStore)
+            parser=getparser(KeyValueStore),
+            svalue='kvstore:///nodes/default'
         ),
         Parameter(
             name='relationships_storage',
-            parser=getparser(KeyValueStore)
+            parser=getparser(KeyValueStore),
+            svalue='kvstore:///relationships/default'
         )
     )
 )
