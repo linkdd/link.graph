@@ -385,12 +385,16 @@ class CRUDOperations(object):
                 store = self.graphmgr.relationships_storage
                 data_id = getfeature(store, 'fulltext').DATA_ID
 
+                ids = [
+                    rel[data_id]
+                    for rel in aliased_set['dataset']
+                ]
+
                 self.graphmgr.mapreduce(
                     'delete-rels',
                     map_remove_relation_id,
                     reduce_remove_relation_id,
-                    [
-                        rel[data_id]
-                        for rel in aliased_set['dataset']
-                    ]
+                    ids
                 )
+
+                del store[ids]

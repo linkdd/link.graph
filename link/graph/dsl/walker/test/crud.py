@@ -66,14 +66,11 @@ class TestCRUD(UTCase):
             return self.nodes[ids]
 
     def _get_rels(self, ids):
-        if not isinstance(ids, string_types):
-            return [
-                self.relationships[_id]
-                for _id in ids
-            ]
-
-        else:
-            return self.relationships[ids]
+        # Single id not used by crud module
+        return [
+            self.relationships[_id]
+            for _id in ids
+        ]
 
     def _set_nodes(self, ids, values):
         if not isinstance(ids, string_types):
@@ -92,20 +89,14 @@ class TestCRUD(UTCase):
             self.relationships[ids] = values
 
     def _del_nodes(self, ids):
-        if not isinstance(ids, string_types):
-            for _id in ids:
-                del self.nodes[_id]
-
-        else:
-            del self.nodes[ids]
+        # Single id not used by crud module
+        for _id in ids:
+            del self.nodes[_id]
 
     def _del_rels(self, ids):
-        if not isinstance(ids, string_types):
-            for _id in ids:
-                del self.relationships[_id]
-
-        else:
-            del self.relationships[ids]
+        # Single id not used by crud module
+        for _id in ids:
+            del self.relationships[_id]
 
     def _contain_node(self, _id):
         return _id in self.nodes
@@ -398,6 +389,145 @@ class TestRelationCRUD(TestCRUD):
         self.assertEqual(result['type_set'], {'r1', 'r2'})
         self.assertIn('foo', self.graphmgr.relationships_storage)
 
+    def test_create_rel_with_filter(self):
+        self.expected_nodes = {
+            'node0': [
+                {'_id': 'buzz'}
+            ],
+            'node1': [
+                {'_id': 'woody'}
+            ],
+            'targets_set:"*:woody"': []
+        }
+
+        stmt = MagicMock()
+        stmt.__class__.__name__ = 'CreateStatementNode'
+        stmt.typed.__class__.__name__ = 'RelationTypeNode'
+        stmt.typed.types = ['r1', 'r2']
+
+        stmt.typed.links.source.__class__.__name__ = 'TypedFilterNode'
+        stmt.typed.links.source.query = 'node0'
+
+        stmt.typed.links.target.__class__.__name__ = 'TypedFilterNode'
+        stmt.typed.links.target.query = 'node1'
+
+        assign0 = MagicMock()
+        assign0.__class__.__name__ = 'AssignSetNode'
+        assign0.propname = '_id'
+        assign0.val = 'foo'
+
+        stmt.typed.properties = [assign0]
+        stmt.typed.alias = 'rel0'
+
+        aliased_sets = {}
+        result = self.crud([stmt], aliased_sets)
+
+        self.assertEqual(len(result), 0)
+        self.assertIn('rel0', aliased_sets)
+        self.assertEqual(aliased_sets['rel0']['type'], 'relationships')
+        self.assertEqual(len(aliased_sets['rel0']['dataset']), 1)
+
+        result = aliased_sets['rel0']['dataset'][0]
+
+        self.assertEqual(result['_id'], 'foo')
+        self.assertEqual(result['type_set'], {'r1', 'r2'})
+        self.assertIn('foo', self.graphmgr.relationships_storage)
+
+    def test_update_relation(self):
+        stmt = MagicMock()
+        stmt.__class__.__name__ = 'UpdateStatementNode'
+
+        update0 = MagicMock()
+        update0.__class__.__name__ = 'UpdateSetPropertyNode'
+        update0.alias = 'elt0'
+        update0.propname = 'foo'
+        update0.value = 'bar'
+
+        update1 = MagicMock()
+        update1.__class__.__name__ = 'UpdateAddPropertyNode'
+        update1.alias = 'elt0'
+        update1.propname = 'bar'
+        update1.value = 'biz'
+
+        update2 = MagicMock()
+        update2.__class__.__name__ = 'UpdateUnsetPropertyNode'
+        update2.alias = 'elt0'
+        update2.propname = 'baz'
+
+        update3 = MagicMock()
+        update3.__class__.__name__ = 'UpdateDelPropertyNode'
+        update3.alias = 'elt0'
+        update3.propname = 'bar'
+        update3.value = 'baz'
+
+        stmt.updates = [update0, update1, update2, update3]
+
+        aliased_sets = {
+            'elt0': {
+                'type': 'relationships',
+                'dataset': [
+                    {'_id': 'foo'}
+                ]
+            }
+        }
+
+        m = Map(value={
+            'foo_register': 'foo',
+            'bar_set': {'baz'},
+            'baz_register': 'foo'
+        })
+        self.relationships = {
+            'foo': m
+        }
+
+        result = self.crud([stmt], aliased_sets)
+
+        self.assertEqual(len(result), 1)
+        self.assertIn('elt0', result[0])
+        self.assertEqual(len(result[0]['elt0']), 1)
+
+        expected = {
+            '_id': 'foo',
+            'foo_register': 'bar',
+            'bar_set': {'biz'}
+        }
+        self.assertIn(expected, result[0]['elt0'])
+        del expected['_id']
+        self.assertEqual(self.relationships['foo'].current, expected)
+
+    def test_delete_relation(self):
+        stmt = MagicMock()
+        stmt.__class__.__name__ = 'DeleteStatementNode'
+        stmt.aliases = ['elt0']
+
+        aliased_sets = {
+            'elt0': {
+                'type': 'relationships',
+                'dataset': [
+                    {'_id': 'andy'}
+                ]
+            }
+        }
+
+        self.nodes['buzz'] = Map(value={
+            'targets_set': {'andy:woody'}
+        })
+
+        self.relationships['andy'] = Map(value={'weight_counter': 50})
+
+        self.expected_nodes = {
+            'targets_set:"andy:*"': [
+                {
+                    '_id': 'buzz',
+                    'targets_set': ['andy:woody']
+                }
+            ]
+        }
+
+        result = self.crud([stmt], aliased_sets)
+
+        self.assertEqual(len(result), 0)
+        self.assertNotIn('andy', self.relationships)
 
 if __name__ == '__main__':
     main()
