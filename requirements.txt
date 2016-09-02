@@ -1,4 +1,4 @@
-b3j0f.conf==0.3.18
+b3j0f.conf==0.3.19
 link.utils==1.4
 link.middleware==1.4
 link.feature==2.0

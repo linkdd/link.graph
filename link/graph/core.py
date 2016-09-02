@@ -14,21 +14,25 @@ from grako.model import ModelBuilderSemantics
 import os
 
 
+def getparser(cls):
+    return lambda svalue, **_: cls.get_middleware_by_uri(svalue)
+
+
 @Configurable(
     paths='{0}/manager.conf'.format(CONF_BASE_PATH),
     conf=category(
         'GRAPHMANAGER',
         Parameter(
             name='parallel_backend',
-            parser=MapReduceMiddleware.get_middleware_by_uri
+            parser=getparser(MapReduceMiddleware)
         ),
         Parameter(
-            name='nodes_store',
-            parser=KeyValueStore.get_middleware_by_uri
+            name='nodes_storage',
+            parser=getparser(KeyValueStore)
         ),
         Parameter(
-            name='relationships_store',
-            parser=KeyValueStore.get_middleware_by_uri
+            name='relationships_storage',
+            parser=getparser(KeyValueStore)
         )
     )
 )
