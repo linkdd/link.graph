@@ -31,9 +31,6 @@ class GraphDSLGenerator(object):
 
     @property
     def grammar(self):
-        if not hasattr(self, '_grammar'):
-            self.grammar = None
-
         return self._grammar
 
     @grammar.setter
