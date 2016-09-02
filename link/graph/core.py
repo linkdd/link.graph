@@ -68,7 +68,7 @@ class GraphMiddleware(Middleware):
         super(GraphMiddleware, self).__init__(*args, **kwargs)
 
         if self.path:
-            cfg = Configurable(paths=os.path.join(self.path))
+            cfg = Configurable(paths=os.path.join(*self.path))
             graphcls = cfg(GraphManager)
 
         else:
