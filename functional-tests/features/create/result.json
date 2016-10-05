@@ -1,0 +1,17 @@
+{
+    "newnode1": [
+        {
+            "_yz_rk": "node1",
+            "type_set": ["n1"],
+            "targets_set": [""],
+            "foo_set": ["bar", "baz"]
+        }
+    ],
+    "newnode2": [
+        {
+            "_yz_rk": "node1",
+            "type_set": ["n2"],
+            "foo_set": ["biz"]
+        }
+    ]
+}

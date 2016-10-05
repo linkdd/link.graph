@@ -4,11 +4,16 @@ python:
   - "3.4"
   - "3.5"
 before_install:
-  - pip install --upgrade pip setuptools
+  - pip install --upgrade pip setuptools aloe
+services:
+  - riak
 install:
   - pip install coveralls
   - python setup.py install
+# Drivers for functionnal tests
+  - pip install link.riak
 script:
   - coverage run setup.py test
+  - (cd functional-tests; ./run.sh)
 after_success:
   - coveralls

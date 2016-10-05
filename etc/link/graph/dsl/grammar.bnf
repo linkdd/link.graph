@@ -15,7 +15,7 @@
 (* symbols definition *)
 
 digits = /[0-9]+/ ;
-characters = /\w*/ ;
+characters = /\w+/ ;
 
 (*/symbols definition *)
 

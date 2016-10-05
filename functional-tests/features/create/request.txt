@@ -1,0 +1,21 @@
+INSERT
+    NODE(n1) {
+        SET id "node1"
+        ADDTOSET foo "bar"
+        ADDTOSET foo "baz"
+    } AS newnode1
+INSERT
+    NODE(n2) {
+        SET id "node2"
+        ADDTOSET foo "biz"
+    } AS newnode2
+INSERT
+    REL(r1) {
+        SET weight 2
+    } AS newrel1
+    SOURCE
+        newnode1
+    TARGET
+        newnode2
+
+SELECT newnode1, newnode2, newrel1
