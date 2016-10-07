@@ -7,13 +7,7 @@ from argparse import ArgumentParser
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Graph Command Line Interface')
-    parser.add_argument(
-        '-U',
-        nargs=1,
-        default='graph://',
-        help='Graph Middleware URL'
-    )
-
+    parser.add_argument('-U', default='graph://', help='Graph Middleware URL')
     args = parser.parse_args()
 
     cli = GraphCLI(args.U)

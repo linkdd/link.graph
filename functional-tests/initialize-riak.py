@@ -78,7 +78,7 @@ def main():
             'schema-name': 'nodes',
             'index-name': 'nodes',
             'schema-path': os.path.join(
-                '..', 'etc', 'link', 'graph', 'schemas', 'nodes.xml'
+                '..', 'etc', 'link', 'graph', 'schemas', 'node.xml'
             )
         },
         {
@@ -86,7 +86,7 @@ def main():
             'schema-name': 'relationships',
             'index-name': 'relationships',
             'schema-path': os.path.join(
-                '..', 'etc', 'link', 'graph', 'schemas', 'relationships.xml'
+                '..', 'etc', 'link', 'graph', 'schemas', 'relationship.xml'
             )
         }
     ]

@@ -22,7 +22,7 @@ except ImportError:
     paths=CONF_PATH,
     conf=category(
         CATEGORY,
-        Parameter(name='history_size', ptype=int, svalue=200)
+        Parameter(name='history_size', ptype=int, svalue='200')
     )
 )
 class HistoryManager(object):

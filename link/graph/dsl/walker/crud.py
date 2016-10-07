@@ -59,14 +59,14 @@ class CRUDOperations(object):
 
         for assign in statement.properties:
             if assign.__class__.__name__ == 'AssignAddNode':
-                newelt[assign.propname].add(assign.val)
+                newelt[assign.propname].add(assign.value)
 
             elif assign.__class__.__name__ == 'AssignSetNode':
                 if assign.propname == data_id_key:
-                    data_id_val = assign.val
+                    data_id_val = assign.value
 
                 else:
-                    newelt[assign.propname].assign(assign.val)
+                    newelt[assign.propname].assign(assign.value)
 
         if data_id_val is None:
             data_id_val = str(uuid4())
@@ -86,7 +86,7 @@ class CRUDOperations(object):
                     'dataset': []
                 }
 
-            doc = deepcopy(newelt.current)
+            doc = deepcopy(store[data_id_val].current)
             doc[data_id_key] = data_id_val
 
             aliased_sets[statement.alias]['dataset'].append(doc)

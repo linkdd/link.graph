@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from b3j0f.conf import Configurable, category, Parameter
+from b3j0f.conf import category, Parameter
+from link.graph.conf import DriverLoader
 
 from link.graph.dsl.generator import single_parser_per_scope
 from link.graph.dsl.walker.core import GraphDSLNodeWalker
@@ -18,7 +19,7 @@ def getparser(cls):
     return lambda svalue, **_: cls.get_middleware_by_uri(svalue)
 
 
-@Configurable(
+@DriverLoader(
     paths='{0}/manager.conf'.format(CONF_BASE_PATH),
     conf=category(
         'GRAPHMANAGER',
@@ -68,7 +69,7 @@ class GraphMiddleware(Middleware):
         super(GraphMiddleware, self).__init__(*args, **kwargs)
 
         if self.path:
-            cfg = Configurable(paths=os.path.join(*self.path))
+            cfg = DriverLoader(paths=os.path.join(*self.path))
             graphcls = cfg(GraphManager)
 
         else:

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
 from b3j0f.conf import Configurable, category, Parameter
 
 from link.graph.cli.history import HistoryManager

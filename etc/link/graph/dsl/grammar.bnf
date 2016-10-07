@@ -38,7 +38,6 @@ value::ValueNode = value:(string | integer | decimal | boolean) ;
 
 updateop::UpdateOperatorNode = value:("SET" | "ADDTOSET" | "UNSET" | "DELFROMSET");
 condop::ConditionalOperatorNode = value:("<" | "<=" | "=" | "!=" | ">=" | ">" | "~=") ;
-condition::ConditionNode = propname:identifier op:condop value:value ;
 
 (*/basic definitions *)
 
