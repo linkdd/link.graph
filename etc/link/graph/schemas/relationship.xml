@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <schema name="relationship" version="1.5">
   <fields>
-    <field name="type_set"        type="string"  indexed="true" stored="true" multiValued="true" />
-    <field name="weight_register" type="int"     indexed="true" stored="true" multiValued="false" />
-    <field name="directed_flag"   type="boolean" indexed="true" stored="true" multiValued="false" />
+    <dynamicField name="*_set"      type="string"  indexed="true" stored="true" multiValued="true" />
+    <dynamicField name="*_counter"  type="int"     indexed="true" stored="true" multiValued="false" />
+    <dynamicField name="*_register" type="string"  indexed="true" stored="true" multiValued="false" />
+    <dynamicField name="*_flag"     type="boolean" indexed="true" stored="true" multiValued="false" />
 
     <!-- All of these fields are required by Riak Search -->
     <field name="_yz_id"   type="_yz_str" indexed="true" stored="true"  multiValued="false" required="true"/>

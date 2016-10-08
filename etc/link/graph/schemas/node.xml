@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <schema name="node" version="1.5">
   <fields>
-    <field name="type_set"           type="string" indexed="true" stored="true" multiValued="true" />
-    <field name="targets_set"        type="string" indexed="true" stored="true" multiValued="true" />
-    <field name="neighbors_counter"  type="int"    indexed="true" stored="true" multiValued="false" />
-    <field name="n_rels_counter"     type="int"    indexed="true" stored="true" multiValued="false" />
-    <field name="n_targets_counter"  type="int"    indexed="true" stored="true" multiValued="false" />
+    <dynamicField name="*_set"      type="string"  indexed="true" stored="true" multiValued="true" />
+    <dynamicField name="*_counter"  type="int"     indexed="true" stored="true" multiValued="false" />
+    <dynamicField name="*_register" type="string"  indexed="true" stored="true" multiValued="false" />
+    <dynamicField name="*_flag"     type="boolean" indexed="true" stored="true" multiValued="false" />
 
     <!-- All of these fields are required by Riak Search -->
     <field name="_yz_id"   type="_yz_str" indexed="true" stored="true"  multiValued="false" required="true"/>
@@ -22,8 +21,9 @@
   <uniqueKey>_yz_id</uniqueKey>
 
   <types>
-    <fieldType name="int"    class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0" />
-    <fieldType name="string" class="solr.StrField"     sortMissingLast="true" />
+    <fieldType name="int"     class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0" />
+    <fieldType name="string"  class="solr.StrField"     sortMissingLast="true" />
+    <fieldType name="boolean" class="solr.BoolField"    sortMissingLast="true" />
 
     <!-- YZ String: Used for non-analyzed fields -->
     <fieldType name="_yz_str" class="solr.StrField" sortMissingLast="true" />
